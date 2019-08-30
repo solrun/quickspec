@@ -147,6 +147,7 @@ regeneralise =
       -- In the case of the type (), we get the law x == y :: (),
       -- which we must not generalise to x == y :: a.
       poly (Var (V (genType ty) x))
+    genTerm (Hole (MV x ty)) = poly (Hole (MV x (genType ty)))
     genTerm (Fun f) = poly (Fun f)
     genTerm (t :$: u) =
       let
@@ -170,11 +171,13 @@ regeneralise =
     restrict prop = typeSubst sub prop
       where
         Just sub = Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs))
-        cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs] ++ concatMap litCs (lhs prop) ++ litCs (rhs prop)
+        cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs] ++ concatMap litCs (lhs prop) ++ litCs (rhs prop) ++ [(hole_ty x, hole_ty y) | x:xs <- hs, y <- xs]
         -- Two variables that were equal before generalisation must have the
         -- same type afterwards
         vs = partitionBy skel (concatMap vars (terms prop))
+        hs = partitionBy mskel (concatMap mvars (terms prop))
         skel (V ty x) = V (oneTypeVar ty) x
+        mskel (MV x ty) = MV x (oneTypeVar ty)
     litCs (t :=: u) = [(typ t, typ u)]
 
 typeInstancesList :: [Type] -> [Type] -> [Twee.Var -> Type]

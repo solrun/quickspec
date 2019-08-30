@@ -11,9 +11,19 @@ import QuickSpec.Internal.Term hiding (char)
 import QuickSpec.Internal.Type
 import qualified Twee.Label as Label
 import Text.ParserCombinators.ReadP
+import QuickSpec.Internal.Haskell hiding (con)
+import Data.List(find)
+import QuickSpec.Internal
 
 class Parse fun a where
   parse :: ReadP fun -> ReadP a
+
+instance Parse fun MetaVar where
+  parse _ = do
+    string "?"
+    xs <- munch isAlphaNum
+    let name = xs
+    return (MV name typeVar)
 
 instance Parse fun Var where
   parse _ = do
@@ -23,15 +33,19 @@ instance Parse fun Var where
     -- Use Twee.Label as an easy way to generate a variable number
     return (V typeVar (fromIntegral (Label.labelNum (Label.label name))))
 
+-- XXX check if variable or metavariable?
+-- XXX we want to apply metavariables to variables
 instance (fun1 ~ fun, Apply (Term fun)) => Parse fun1 (Term fun) where
   parse pfun =
-    parseApp <++ parseVar
+    parseApp
     where
+      parseFun = Fun <$> pfun
       parseVar = Var <$> parse pfun
+      parseMetaVar = Hole <$> parse pfun
       parseApp = do
-        f <- pfun
+        f <- parseFun <++ parseMetaVar <++ parseVar
         args <- parseArgs <++ return []
-        return (unPoly (foldl apply (poly (Fun f)) (map poly args)))
+        return (unPoly (foldl apply (poly (f)) (map poly args)))
       parseArgs = between (char '(') (char ')') (sepBy (parse pfun) (char ','))
 
 instance (Parse fun a, Typed a) => Parse fun (Equation a) where
@@ -58,3 +72,24 @@ parseProp pfun xs =
   case readP_to_S (parse pfun <* eof) (filter (not . isSpace) xs) of
     [(x, [])] -> x
     ps -> error ("parse': got result " ++ prettyShow ps ++ " while parsing " ++ xs)
+
+parseFromConfig :: Config -> ReadP Constant
+parseFromConfig conf = do
+  fname <- munch1 $ flip notElem ['(',')',' ']
+  case find (\x -> con_name x == fname) (concat $ cfg_constants conf) of
+    Just c -> return c
+    Nothing -> mzero
+
+parseFromSig :: (Signature a) => a -> ReadP Constant
+parseFromSig sig = parseFromConfig (makeConfig sig)
+
+makeConfig :: (Signature a) => a -> Config
+makeConfig sig = runSig sig (Context 1 []) defaultConfig
+
+testSig = [
+  con "reverse" (reverse :: [A] -> [A]),
+  con "++" ((++) :: [A] -> [A] -> [A]),
+  con "[]" ([] :: [A]),
+  con "map" (map :: (A -> B) -> [A] -> [B]),
+  con "length" (length :: [A] -> Int),
+  con "concat" (concat :: [[A]] -> [A])]

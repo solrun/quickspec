@@ -18,11 +18,15 @@ import qualified Data.Map.Strict as Map
 import Data.List
 import Data.Ord
 
+-- TODO: Better to have another type for schema-terms?
 -- | A typed term.
-data Term f = Var {-# UNPACK #-} !Var | Fun !f | !(Term f) :$: !(Term f)
+data Term f = Var {-# UNPACK #-} !Var | Fun !f | !(Term f) :$: !(Term f) | Hole MetaVar
   deriving (Eq, Ord, Show, Functor)
 
--- | A variable, which has a type and a number.
+data MetaVar = MV { hole_id :: String, hole_ty :: Type }
+  deriving (Eq, Ord, Show)
+
+-- | A variable, which has a type and a number. XXX what does the number represent?
 data Var = V { var_ty :: !Type, var_id :: {-# UNPACK #-} !Int }
   deriving (Eq, Ord, Show, Generic)
 
@@ -33,6 +37,11 @@ instance Typed Var where
   typ x = var_ty x
   otherTypesDL _ = mzero
   typeSubst_ sub (V ty x) = V (typeSubst_ sub ty) x
+
+instance Typed MetaVar where
+  typ x = hole_ty x
+  otherTypesDL _ = mzero
+  typeSubst_ sub (MV x ty) = MV x (typeSubst_ sub ty)
 
 -- | A class for things that contain terms.
 class Symbolic f a | a -> f where
@@ -69,8 +78,14 @@ instance Pretty Var where
   pPrint x = parens $ text "X" <#> pPrint (var_id x+1) <+> text "::" <+> pPrint (var_ty x)
   --pPrint x = text "X" <#> pPrint (var_id x+1)
 
+instance Pretty MetaVar where
+  pPrint x = parens $ text ("?" ++ hole_id x) <+> text "::" <+> pPrint (hole_ty x)
+
+--XXX: Do I need to worry about PrettyTerm?
 instance PrettyTerm f => Pretty (Term f) where
   pPrintPrec l p (Var x :@: ts) =
+    pPrintTerm curried l p (pPrint x) ts
+  pPrintPrec l p (Hole x :@: ts) =
     pPrintTerm curried l p (pPrint x) ts
   pPrintPrec l p (Fun f :@: ts) =
     pPrintTerm (termStyle f) l p (pPrint f) ts
@@ -88,6 +103,9 @@ funs x = [ f | t <- terms x, Fun f <- subterms t ]
 -- with duplicates included.
 vars :: Symbolic f a => a -> [Var]
 vars x = [ v | t <- terms x, Var v <- subterms t ]
+
+mvars :: Symbolic f a => a -> [MetaVar]
+mvars x = [ v | t <- terms x, Hole v <- subterms t ]
 
 -- | Decompose a term into a head and a list of arguments.
 pattern f :@: ts <- (getApp -> (f, ts)) where
@@ -153,16 +171,19 @@ evalTerm var fun = eval
 
 instance Typed f => Typed (Term f) where
   typ (Var x) = typ x
+  typ (Hole x) = typ x
   typ (Fun f) = typ f
   typ (t :$: _) = typeDrop 1 (typ t)
 
   otherTypesDL (Var _) = mempty
+  otherTypesDL (Hole _) = mempty
   otherTypesDL (Fun f) = typesDL f
   otherTypesDL (t :$: u) = typesDL t `mplus` typesDL u
 
   typeSubst_ sub = tsub
     where
       tsub (Var x) = Var (typeSubst_ sub x)
+      tsub (Hole x) = Hole (typeSubst_ sub x)
       tsub (Fun f) = Fun (typeSubst_ sub f)
       tsub (t :$: u) =
         typeSubst_ sub t :$: typeSubst_ sub u

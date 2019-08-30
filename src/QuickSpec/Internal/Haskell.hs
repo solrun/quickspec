@@ -474,7 +474,8 @@ data Config =
     cfg_default_to :: Type,
     cfg_infer_instance_types :: Bool,
     cfg_background :: [Prop (Term Constant)],
-    cfg_print_filter :: Prop (Term Constant) -> Bool
+    cfg_print_filter :: Prop (Term Constant) -> Bool,
+    cfg_schemas :: [Term Constant]
     }
 
 lens_quickCheck = lens cfg_quickCheck (\x y -> y { cfg_quickCheck = x })
@@ -487,6 +488,7 @@ lens_default_to = lens cfg_default_to (\x y -> y { cfg_default_to = x })
 lens_infer_instance_types = lens cfg_infer_instance_types (\x y -> y { cfg_infer_instance_types = x })
 lens_background = lens cfg_background (\x y -> y { cfg_background = x })
 lens_print_filter = lens cfg_print_filter (\x y -> y { cfg_print_filter = x })
+lens_schemas = lens cfg_schemas (\x y -> y {cfg_schemas = x})
 
 defaultConfig :: Config
 defaultConfig =
@@ -500,7 +502,9 @@ defaultConfig =
     cfg_default_to = typeRep (Proxy :: Proxy Int),
     cfg_infer_instance_types = False,
     cfg_background = [],
-    cfg_print_filter = \_ -> True }
+    cfg_print_filter = \_ -> True,
+    cfg_schemas = []
+    }
 
 -- Extra types for the universe that come from in-scope instances.
 instanceTypes :: Instances -> Config -> [Type]
@@ -575,7 +579,7 @@ quickSpec cfg@Config{..} = do
       [true | any (/= Function) (map classify (f cfg_constants))] ++
       f cfg_constants ++ concatMap selectors (f cfg_constants)
     constants = constantsOf concat
-    
+
     univ = conditionalsUniverse (instanceTypes instances cfg) constants
     instances = cfg_instances `mappend` baseInstances
 
@@ -597,6 +601,7 @@ quickSpec cfg@Config{..} = do
          | ty <- Set.toList (univ_types univ),
            sub <- maybeToList (matchType (typeRes (typ con)) ty) ]
 
+    -- TODO: modify this to deal with schemas!
     enumerator cons =
       sortTerms measure $
       filterEnumerator (all constraintsOk . funs) $
