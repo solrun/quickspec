@@ -15,6 +15,7 @@ import qualified QuickSpec.Internal.Haskell as Haskell
 import qualified QuickSpec.Internal.Haskell.Resolve as Haskell
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
 import qualified QuickSpec.Internal.Pruning.UntypedTwee as Twee
+import qualified QuickSpec.Internal.Explore.Polymorphic as Polymorphic
 import QuickSpec.Internal.Prop
 import QuickSpec.Internal.Term(Term)
 import Test.QuickCheck
@@ -26,6 +27,7 @@ import QuickSpec.Internal.Type hiding (defaultTo)
 import Data.Proxy
 import System.Environment
 import Data.Semigroup(Semigroup(..))
+import QuickSpec.Internal.Parse
 
 -- | Run QuickSpec. See the documentation at the top of this file.
 quickSpec :: Signature sig => sig -> IO ()
@@ -90,6 +92,16 @@ con name x =
   Sig $ \ctx@(Context _ names) ->
     if name `elem` names then id else
       unSig (customConstant (Haskell.con name x)) ctx
+
+-- declare a schema with a given name and a string representation
+-- TODO: use the name
+schema :: String -> String -> Sig
+schema name rep = addSchemas [p]
+  where p = parseProp (parseFromConfig Haskell.defaultConfig) rep :: Prop (Term Haskell.Constant)
+
+addSchemas :: [Prop (Term Haskell.Constant)] -> Sig
+addSchemas props =
+  Sig $ \_ cfg -> cfg { Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ (map Polymorphic.regeneralise props) }
 
 -- | Add a custom constant.
 customConstant :: Haskell.Constant -> Sig
@@ -341,3 +353,16 @@ funs = background [
 -- see 'bools', 'arith', 'lists', 'funs' and 'without'.
 prelude :: Sig
 prelude = signature [bools, arith (Proxy :: Proxy Int), lists]
+
+testSig = [
+  con "reverse" (reverse :: [A] -> [A]),
+  con "++" ((++) :: [A] -> [A] -> [A]),
+  con "[]" ([] :: [A]),
+  con "map" (map :: (A -> B) -> [A] -> [B]),
+  con "length" (length :: [A] -> Int),
+  con "concat" (concat :: [[A]] -> [A]),
+  schema "" "?F(A) = ?F(?F(A))",
+  schema "commutative" "?F(X,Y) = ?F(Y,X)"]
+
+makeConfig :: (Signature a) => a -> Haskell.Config
+makeConfig sig = runSig sig (Context 1 []) Haskell.defaultConfig

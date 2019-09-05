@@ -13,14 +13,14 @@ import qualified Twee.Label as Label
 import Text.ParserCombinators.ReadP
 import QuickSpec.Internal.Haskell hiding (con)
 import Data.List(find)
-import QuickSpec.Internal
+--import QuickSpec.Internal
 
 class Parse fun a where
   parse :: ReadP fun -> ReadP a
 
 instance Parse fun MetaVar where
   parse _ = do
-    string "?"
+    string "?" -- we use ? as a prefix to denote a metavariable
     xs <- munch isAlphaNum
     let name = xs
     return (MV name typeVar)
@@ -33,8 +33,6 @@ instance Parse fun Var where
     -- Use Twee.Label as an easy way to generate a variable number
     return (V typeVar (fromIntegral (Label.labelNum (Label.label name))))
 
--- XXX check if variable or metavariable?
--- XXX we want to apply metavariables to variables
 instance (fun1 ~ fun, Apply (Term fun)) => Parse fun1 (Term fun) where
   parse pfun =
     parseApp
@@ -80,16 +78,20 @@ parseFromConfig conf = do
     Just c -> return c
     Nothing -> mzero
 
-parseFromSig :: (Signature a) => a -> ReadP Constant
-parseFromSig sig = parseFromConfig (makeConfig sig)
 
-makeConfig :: (Signature a) => a -> Config
-makeConfig sig = runSig sig (Context 1 []) defaultConfig
+-- XXX Un-imported Internal to avoid circular imports
 
-testSig = [
-  con "reverse" (reverse :: [A] -> [A]),
-  con "++" ((++) :: [A] -> [A] -> [A]),
-  con "[]" ([] :: [A]),
-  con "map" (map :: (A -> B) -> [A] -> [B]),
-  con "length" (length :: [A] -> Int),
-  con "concat" (concat :: [[A]] -> [A])]
+--parseFromSig :: (Signature a) => a -> ReadP Constant
+--parseFromSig sig = parseFromConfig (makeConfig sig)
+
+
+--makeConfig :: (Signature a) => a -> Config
+--makeConfig sig = runSig sig (Context 1 []) defaultConfig
+
+--testSig = [
+--  con "reverse" (reverse :: [A] -> [A]),
+--  con "++" ((++) :: [A] -> [A] -> [A]),
+--  con "[]" ([] :: [A]),
+--  con "map" (map :: (A -> B) -> [A] -> [B]),
+--  con "length" (length :: [A] -> Int),
+--  con "concat" (concat :: [[A]] -> [A])]

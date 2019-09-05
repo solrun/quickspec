@@ -475,7 +475,7 @@ data Config =
     cfg_infer_instance_types :: Bool,
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
-    cfg_schemas :: [Term Constant]
+    cfg_schemas :: [Prop (Term Constant)]
     }
 
 lens_quickCheck = lens cfg_quickCheck (\x y -> y { cfg_quickCheck = x })
