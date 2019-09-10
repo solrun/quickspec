@@ -50,6 +50,7 @@ import qualified Data.Set as Set
 import qualified Test.QuickCheck.Poly as Poly
 import Numeric.Natural
 import Test.QuickCheck.Instances()
+import qualified Data.Map.Strict as Map
 
 baseInstances :: Instances
 baseInstances =
@@ -644,3 +645,40 @@ quickSpec cfg@Config{..} = do
     Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
+
+fitSchema :: Prop (Term Constant) -> Prop (Term Constant) -> Bool
+fitSchema = undefined
+-- Look at left and right hand sides, do they match (check both options)?
+-- Also need to consider when we have the same variable/constant in multiple places
+-- Normalize terms in some way?
+matchEquations :: Equation (Term Constant) -> Equation (Term Constant) -> Bool
+matchEquations (s1 :=: s2) (p1 :=: p2) = undefined
+
+matchSchemaTerm :: Term Constant -> Term Constant -> Bool
+matchSchemaTerm (s1 :$: s2) (t1 :$: t2) = matchSchemaTerm s1 t1 && matchSchemaTerm s2 t2
+matchSchemaTerm (Hole mv) t = undefined
+matchSchemaTerm _ _ = undefined
+
+type SubstEnv = Map.Map String (Term Constant)
+type VarEnv   = Map.Map Int Int
+
+matchSchemaTermEnv :: SubstEnv -> VarEnv -> [(Term Constant, Term Constant)] -> Maybe (SubstEnv,VarEnv)
+matchSchemaTermEnv holesubst varsubst [] = Just (holesubst,varsubst)
+matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) = case matchVars varsubst v1 v2 of
+  (False,_) -> Nothing
+  (True, vars) -> matchSchemaTermEnv holesubst vars ts
+matchSchemaTermEnv _ _ _ = Nothing
+
+matchVars :: VarEnv -> Var -> Var -> (Bool, VarEnv)
+matchVars varsubsts v1 v2 = case Map.lookup vid1 varsubsts of
+  Nothing -> (True, Map.insert vid1 vid2 varsubsts)
+  Just k -> (k == vid2, varsubsts)
+  where vid1 = var_id v1
+        vid2 = var_id v2
+
+
+
+
+
+
+

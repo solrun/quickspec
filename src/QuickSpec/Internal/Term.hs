@@ -81,7 +81,6 @@ instance Pretty Var where
 instance Pretty MetaVar where
   pPrint x = parens $ text ("?" ++ hole_id x) <+> text "::" <+> pPrint (hole_ty x)
 
---XXX: Do I need to worry about PrettyTerm?
 instance PrettyTerm f => Pretty (Term f) where
   pPrintPrec l p (Var x :@: ts) =
     pPrintTerm curried l p (pPrint x) ts
