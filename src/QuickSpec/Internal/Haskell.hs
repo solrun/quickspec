@@ -655,18 +655,29 @@ matchEquations :: Equation (Term Constant) -> Equation (Term Constant) -> Bool
 matchEquations (s1 :=: s2) (p1 :=: p2) = undefined
 
 matchSchemaTerm :: Term Constant -> Term Constant -> Bool
-matchSchemaTerm (s1 :$: s2) (t1 :$: t2) = matchSchemaTerm s1 t1 && matchSchemaTerm s2 t2
-matchSchemaTerm (Hole mv) t = undefined
-matchSchemaTerm _ _ = undefined
+matchSchemaTerm s t = isJust $ matchSchemaTermEnv Map.empty Map.empty [(s,t)]
 
 type SubstEnv = Map.Map String (Term Constant)
 type VarEnv   = Map.Map Int Int
 
 matchSchemaTermEnv :: SubstEnv -> VarEnv -> [(Term Constant, Term Constant)] -> Maybe (SubstEnv,VarEnv)
 matchSchemaTermEnv holesubst varsubst [] = Just (holesubst,varsubst)
-matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) = case matchVars varsubst v1 v2 of
-  (False,_) -> Nothing
-  (True, vars) -> matchSchemaTermEnv holesubst vars ts
+matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) =
+  case matchVars varsubst v1 v2 of
+    (False,_) -> Nothing
+    (True, vs) -> matchSchemaTermEnv holesubst vs ts
+matchSchemaTermEnv holesubst varsubst ((Hole mv, t2):ts) =
+  case Map.lookup hid holesubst of
+    Nothing -> matchSchemaTermEnv (Map.insert hid t2 holesubst) varsubst ts
+    Just t -> if t == t2 then matchSchemaTermEnv holesubst varsubst ts else Nothing
+  where hid = hole_id mv
+matchSchemaTermEnv holesubst varsubst (((s1 :$: s2),(t1 :$: t2)):ts) =
+  case matchSchemaTermEnv holesubst varsubst [(s1,t1)] of
+    Nothing -> Nothing
+    Just (hs,vs) -> matchSchemaTermEnv hs vs ((s2,t2):ts)
+matchSchemaTermEnv hs vs  ((Fun f1, Fun f2):ts) = if f1 == f2
+  then matchSchemaTermEnv hs vs ts
+  else Nothing
 matchSchemaTermEnv _ _ _ = Nothing
 
 matchVars :: VarEnv -> Var -> Var -> (Bool, VarEnv)
