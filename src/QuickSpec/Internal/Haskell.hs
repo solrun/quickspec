@@ -648,15 +648,17 @@ quickSpec cfg@Config{..} = do
 
 fitSchema :: Prop (Term Constant) -> Prop (Term Constant) -> Bool
 fitSchema = undefined
--- Look at left and right hand sides, do they match (check both options)?
--- Also need to consider when we have the same variable/constant in multiple places
--- Normalize terms in some way?
-matchEquations :: Equation (Term Constant) -> Equation (Term Constant) -> Bool
-matchEquations (s1 :=: s2) (p1 :=: p2) = undefined
 
+-- TODO: Beautify
+matchEquations :: Equation (Term Constant) -> Equation (Term Constant) -> Bool
+matchEquations (s1 :=: s2) (p1 :=: p2) = (isJust $ matchSchemaTermEnv Map.empty Map.empty [(s1,p1),(s2,p2)]) ||
+                                         (isJust $ matchSchemaTermEnv Map.empty Map.empty [(s1,p2),(s2,p1)])
+
+-- Matching for terms. Assumes that first argument may contain holes but not the second.
 matchSchemaTerm :: Term Constant -> Term Constant -> Bool
 matchSchemaTerm s t = isJust $ matchSchemaTermEnv Map.empty Map.empty [(s,t)]
 
+-- TODO: store only syntactic rep in hole subst env rather than entire terms
 type SubstEnv = Map.Map String (Term Constant)
 type VarEnv   = Map.Map Int Int
 
@@ -669,7 +671,7 @@ matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) =
 matchSchemaTermEnv holesubst varsubst ((Hole mv, t2):ts) =
   case Map.lookup hid holesubst of
     Nothing -> matchSchemaTermEnv (Map.insert hid t2 holesubst) varsubst ts
-    Just t -> if t == t2 then matchSchemaTermEnv holesubst varsubst ts else Nothing
+    Just t -> if (syn t) == (syn t2) then matchSchemaTermEnv holesubst varsubst ts else Nothing
   where hid = hole_id mv
 matchSchemaTermEnv holesubst varsubst (((s1 :$: s2),(t1 :$: t2)):ts) =
   case matchSchemaTermEnv holesubst varsubst [(s1,t1)] of
@@ -687,9 +689,11 @@ matchVars varsubsts v1 v2 = case Map.lookup vid1 varsubsts of
   where vid1 = var_id v1
         vid2 = var_id v2
 
-
-
-
-
+-- Syntactic representation of terms (types were getting in the way)
+syn :: Term Constant -> String
+syn (Var v) = show $ var_id v
+syn (Fun f) = con_name f
+syn (t1 :$: t2) = syn t1 ++ " " ++ syn t2
+syn (Hole mv) = hole_id mv
 
 

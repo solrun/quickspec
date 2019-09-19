@@ -13,7 +13,6 @@ import qualified Twee.Label as Label
 import Text.ParserCombinators.ReadP
 import QuickSpec.Internal.Haskell hiding (con)
 import Data.List(find)
---import QuickSpec.Internal
 
 class Parse fun a where
   parse :: ReadP fun -> ReadP a
@@ -77,21 +76,3 @@ parseFromConfig conf = do
   case find (\x -> con_name x == fname) (concat $ cfg_constants conf) of
     Just c -> return c
     Nothing -> mzero
-
-
--- XXX Un-imported Internal to avoid circular imports
-
---parseFromSig :: (Signature a) => a -> ReadP Constant
---parseFromSig sig = parseFromConfig (makeConfig sig)
-
-
---makeConfig :: (Signature a) => a -> Config
---makeConfig sig = runSig sig (Context 1 []) defaultConfig
-
---testSig = [
---  con "reverse" (reverse :: [A] -> [A]),
---  con "++" ((++) :: [A] -> [A] -> [A]),
---  con "[]" ([] :: [A]),
---  con "map" (map :: (A -> B) -> [A] -> [B]),
---  con "length" (length :: [A] -> Int),
---  con "concat" (concat :: [[A]] -> [A])]
