@@ -646,20 +646,35 @@ quickSpec cfg@Config{..} = do
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
 
-fitSchema :: Prop (Term Constant) -> Prop (Term Constant) -> Bool
-fitSchema = undefined
+secondOrder :: Prop (Term Constant) -> [Prop (Term Constant)]
+secondOrder (w :=>: s) = undefined
+-- find metavariables
+-- apply toSecond to all possible combinations
 
--- TODO: Beautify
+toSecond :: Equation (Term Constant) -> String -> Equation (Term Constant)
+toSecond (lh :=: rh) mvn = (toSecond' lh :=: toSecond' rh)
+  where toSecond' (Hole mv) = case hole_id mv of
+          mvn -> Hole (mv1 mv) :$: Hole (mv2 mv)
+        toSecond' (t1 :$: t2) = (toSecond' t1) :$: (toSecond' t2)
+        toSecond' x = x
+        mv1 = undefined
+        mv2 = undefined
+-- What to do about types?
+
+
+fitSchema :: Prop (Term Constant) -> Prop (Term Constant) -> Bool
+fitSchema (_ :=>: s) (_ :=>: p)= matchEquations s p
+
 matchEquations :: Equation (Term Constant) -> Equation (Term Constant) -> Bool
-matchEquations (s1 :=: s2) (p1 :=: p2) = (isJust $ matchSchemaTermEnv Map.empty Map.empty [(s1,p1),(s2,p2)]) ||
-                                         (isJust $ matchSchemaTermEnv Map.empty Map.empty [(s1,p2),(s2,p1)])
+matchEquations (s1 :=: s2) (p1 :=: p2) = (matchSchemaTermPairs [(s1,p1),(s2,p2)]) ||
+                                         (matchSchemaTermPairs [(s1,p2),(s2,p1)])
+  where matchSchemaTermPairs = isJust . matchSchemaTermEnv Map.empty Map.empty
 
 -- Matching for terms. Assumes that first argument may contain holes but not the second.
 matchSchemaTerm :: Term Constant -> Term Constant -> Bool
 matchSchemaTerm s t = isJust $ matchSchemaTermEnv Map.empty Map.empty [(s,t)]
 
--- TODO: store only syntactic rep in hole subst env rather than entire terms
-type SubstEnv = Map.Map String (Term Constant)
+type SubstEnv = Map.Map String String
 type VarEnv   = Map.Map Int Int
 
 matchSchemaTermEnv :: SubstEnv -> VarEnv -> [(Term Constant, Term Constant)] -> Maybe (SubstEnv,VarEnv)
@@ -670,9 +685,10 @@ matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) =
     (True, vs) -> matchSchemaTermEnv holesubst vs ts
 matchSchemaTermEnv holesubst varsubst ((Hole mv, t2):ts) =
   case Map.lookup hid holesubst of
-    Nothing -> matchSchemaTermEnv (Map.insert hid t2 holesubst) varsubst ts
-    Just t -> if (syn t) == (syn t2) then matchSchemaTermEnv holesubst varsubst ts else Nothing
+    Nothing -> matchSchemaTermEnv (Map.insert hid st2 holesubst) varsubst ts
+    Just t -> if t == st2 then matchSchemaTermEnv holesubst varsubst ts else Nothing
   where hid = hole_id mv
+        st2 = synrep t2
 matchSchemaTermEnv holesubst varsubst (((s1 :$: s2),(t1 :$: t2)):ts) =
   case matchSchemaTermEnv holesubst varsubst [(s1,t1)] of
     Nothing -> Nothing
@@ -690,10 +706,10 @@ matchVars varsubsts v1 v2 = case Map.lookup vid1 varsubsts of
         vid2 = var_id v2
 
 -- Syntactic representation of terms (types were getting in the way)
-syn :: Term Constant -> String
-syn (Var v) = show $ var_id v
-syn (Fun f) = con_name f
-syn (t1 :$: t2) = syn t1 ++ " " ++ syn t2
-syn (Hole mv) = hole_id mv
+synrep :: Term Constant -> String
+synrep (Var v) = show $ var_id v
+synrep (Fun f) = con_name f
+synrep (t1 :$: t2) = synrep t1 ++ " " ++ synrep t2
+synrep (Hole mv) = hole_id mv
 
 
