@@ -40,3 +40,6 @@ examples/tests/TypeClass
 examples/old-examples
 hacking-guide/
 statem-laws/
+*.o
+*.hi
+*.dyn*

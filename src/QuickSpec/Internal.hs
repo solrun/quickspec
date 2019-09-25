@@ -94,14 +94,14 @@ con name x =
       unSig (customConstant (Haskell.con name x)) ctx
 
 -- declare a schema with a given name and a string representation
--- TODO: use the name
 schema :: String -> String -> Sig
-schema name rep = addSchemas [p]
+schema name rep = addSchemas [(name,p')]
   where p = parseProp (parseFromConfig Haskell.defaultConfig) rep :: Prop (Term Haskell.Constant)
+        p' = Polymorphic.regeneralise p
 
-addSchemas :: [Prop (Term Haskell.Constant)] -> Sig
+addSchemas :: [(String,Prop (Term Haskell.Constant))] -> Sig
 addSchemas props =
-  Sig $ \_ cfg -> cfg { Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ (map Polymorphic.regeneralise props) }
+  Sig $ \_ cfg -> cfg { Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ props}
 
 -- | Add a custom constant.
 customConstant :: Haskell.Constant -> Sig

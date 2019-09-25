@@ -476,7 +476,7 @@ data Config =
     cfg_infer_instance_types :: Bool,
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
-    cfg_schemas :: [Prop (Term Constant)]
+    cfg_schemas :: [(String,Prop (Term Constant))]
     }
 
 lens_quickCheck = lens cfg_quickCheck (\x y -> y { cfg_quickCheck = x })
@@ -588,12 +588,13 @@ quickSpec cfg@Config{..} = do
 
     present funs prop = do
       norm <- normaliser
+      let sf = schema_filter cfg_schemas prop
       let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      when (cfg_print_filter prop) $ do
+      when (cfg_print_filter prop && (fst sf)) $ do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
-          printf "%3d. %s" n $ show $
+          printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
     -- XXX do this during testing
@@ -646,21 +647,15 @@ quickSpec cfg@Config{..} = do
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
 
-secondOrder :: Prop (Term Constant) -> [Prop (Term Constant)]
-secondOrder (w :=>: s) = undefined
--- find metavariables
--- apply toSecond to all possible combinations
+showSchema :: String -> String
+showSchema "" = ""
+showSchema s  = s ++ " property: "
 
-toSecond :: Equation (Term Constant) -> String -> Equation (Term Constant)
-toSecond (lh :=: rh) mvn = (toSecond' lh :=: toSecond' rh)
-  where toSecond' (Hole mv) = case hole_id mv of
-          mvn -> Hole (mv1 mv) :$: Hole (mv2 mv)
-        toSecond' (t1 :$: t2) = (toSecond' t1) :$: (toSecond' t2)
-        toSecond' x = x
-        mv1 = undefined
-        mv2 = undefined
--- What to do about types?
-
+schema_filter :: [(String,Prop (Term Constant))] -> Prop (Term Constant) -> (Bool, String)
+schema_filter [] _ = (True,"")
+schema_filter [s] p = (fitSchema (snd s) p, fst s)
+schema_filter (s:ss@(_:_)) p = if fitSchema (snd s) p then (True, fst s)
+                                  else schema_filter ss p
 
 fitSchema :: Prop (Term Constant) -> Prop (Term Constant) -> Bool
 fitSchema (_ :=>: s) (_ :=>: p)= matchEquations s p
@@ -712,4 +707,19 @@ synrep (Fun f) = con_name f
 synrep (t1 :$: t2) = synrep t1 ++ " " ++ synrep t2
 synrep (Hole mv) = hole_id mv
 
+-- TODO: Get this to work
+secondOrder :: Prop (Term Constant) -> [Prop (Term Constant)]
+secondOrder (w :=>: s) = undefined
+-- find metavariables
+-- apply toSecond to all possible combinations
+
+toSecond :: Equation (Term Constant) -> String -> Equation (Term Constant)
+toSecond (lh :=: rh) mvn = (toSecond' lh :=: toSecond' rh)
+  where toSecond' (Hole mv) = case hole_id mv of
+          mvn -> Hole (mv1 mv) :$: Hole (mv2 mv)
+        toSecond' (t1 :$: t2) = (toSecond' t1) :$: (toSecond' t2)
+        toSecond' x = x
+        mv1 = undefined
+        mv2 = undefined
+-- What to do about types?
 
