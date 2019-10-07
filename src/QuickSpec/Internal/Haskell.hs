@@ -707,19 +707,3 @@ synrep (Fun f) = con_name f
 synrep (t1 :$: t2) = synrep t1 ++ " " ++ synrep t2
 synrep (Hole mv) = hole_id mv
 
--- TODO: Get this to work
-secondOrder :: Prop (Term Constant) -> [Prop (Term Constant)]
-secondOrder (w :=>: s) = undefined
--- find metavariables
--- apply toSecond to all possible combinations
-
-toSecond :: Equation (Term Constant) -> String -> Equation (Term Constant)
-toSecond (lh :=: rh) mvn = (toSecond' lh :=: toSecond' rh)
-  where toSecond' (Hole mv) = case hole_id mv of
-          mvn -> Hole (mv1 mv) :$: Hole (mv2 mv)
-        toSecond' (t1 :$: t2) = (toSecond' t1) :$: (toSecond' t2)
-        toSecond' x = x
-        mv1 = undefined
-        mv2 = undefined
--- What to do about types?
-
