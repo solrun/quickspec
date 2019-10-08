@@ -588,13 +588,14 @@ quickSpec cfg@Config{..} = do
 
     present funs prop = do
       norm <- normaliser
-      let sf = schema_filter cfg_schemas prop
+      --let sf = schema_filter cfg_schemas prop
       let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      when (cfg_print_filter prop && (fst sf)) $ do
+      when (cfg_print_filter prop ) $ do -- && (fst sf)) $ do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
-          printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
+          printf "%3d. %s" n $ show $
+          --printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
     -- XXX do this during testing
@@ -606,6 +607,7 @@ quickSpec cfg@Config{..} = do
     -- TODO: modify this to deal with schemas!
     enumerator cons =
       sortTerms measure $
+      filterEnumerator (schema_term_filter cfg_schemas) $
       filterEnumerator (all constraintsOk . funs) $
       filterEnumerator (\t -> size t + length (conditions t) <= cfg_max_size) $
       enumerateConstants atomic `mappend` enumerateApplications
@@ -646,6 +648,10 @@ quickSpec cfg@Config{..} = do
     Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
+
+schema_term_filter ::[(String,Prop (Term Constant))] -> Term Constant -> Bool
+schema_term_filter s t = or $ map matchEqTerm $ map snd s
+  where matchEqTerm (_ :=>: (sl :=: sr)) = (matchSchemaTerm sl t) || (matchSchemaTerm sr t)
 
 showSchema :: String -> String
 showSchema "" = ""
