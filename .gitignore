@@ -15,6 +15,7 @@ examples/IntSet
 examples/ListHOF
 examples/ListMonad
 examples/Lists
+examples/ListsSchemas
 examples/Octonions
 examples/Parsing
 examples/PrettyPrinting
