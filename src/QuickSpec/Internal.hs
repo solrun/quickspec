@@ -95,13 +95,9 @@ con name x =
 
 -- declare a schema with a given name and a string representation
 schema :: String -> String -> Sig
-schema name rep = addSchemas [(name,p')]
-  where p = parseProp (parseFromConfig Haskell.defaultConfig) rep :: Prop (Term Haskell.Constant)
-        p' = Polymorphic.regeneralise p
-
-addSchemas :: [(String,Prop (Term Haskell.Constant))] -> Sig
-addSchemas props =
-  Sig $ \_ cfg -> cfg { Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ props}
+schema name rep =
+  Sig $ \_ cfg -> cfg {Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ [(name, p cfg)]}
+  where p c = Polymorphic.regeneralise $ parseProp (parseFromConfig c) rep :: Prop (Term Haskell.Constant)
 
 -- | Add a custom constant.
 customConstant :: Haskell.Constant -> Sig

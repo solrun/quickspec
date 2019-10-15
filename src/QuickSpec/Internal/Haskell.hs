@@ -291,6 +291,9 @@ instance Ord Constant where
 
 instance Background Constant
 
+instance SynRep Constant where
+  srep = con_name
+
 con :: Typeable a => String -> a -> Constant
 con name val =
   constant' name (toValue (Identity val))
@@ -588,9 +591,10 @@ quickSpec cfg@Config{..} = do
 
     present funs prop = do
       norm <- normaliser
-      --let sf = schema_filter cfg_schemas prop
+      let sf = schema_filter cfg_schemas prop
       let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      when (cfg_print_filter prop ) $ do -- && (fst sf)) $ do
+      --when (cfg_print_filter prop && (fst sf)) $ do -- post-filtering
+      when (cfg_print_filter prop) $ do -- no post-filtering
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
@@ -604,10 +608,9 @@ quickSpec cfg@Config{..} = do
          | ty <- Set.toList (univ_types univ),
            sub <- maybeToList (matchType (typeRes (typ con)) ty) ]
 
-    -- TODO: modify this to deal with schemas!
-    enumerator cons =
+    enumerator schemas cons =
       sortTerms measure $
-      filterEnumerator (schema_term_filter cfg_schemas) $
+      filterEnumerator (schemas_term_filter schemas) $ -- TODO: This has very little effect, maybe skip it?
       filterEnumerator (all constraintsOk . funs) $
       filterEnumerator (\t -> size t + length (conditions t) <= cfg_max_size) $
       enumerateConstants atomic `mappend` enumerateApplications
@@ -618,7 +621,6 @@ quickSpec cfg@Config{..} = do
 
     singleUse ty =
       isJust (findInstance instances ty :: Maybe (Value SingleUse))
-
     mainOf n f g = do
       unless (null (f cfg_constants)) $ do
         putLine $ show $ pPrintSignature
@@ -628,8 +630,15 @@ quickSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
-      QuickSpec.Internal.Explore.quickSpec pres (flip eval) cfg_max_size cfg_max_commutative_size singleUse univ
-        (enumerator (map Fun (constantsOf g)))
+      let runquickspec tsize schemas =
+            QuickSpec.Internal.Explore.quickSpec
+            pres (flip eval) tsize cfg_max_commutative_size singleUse univ
+            (enumerator schemas (map Fun (constantsOf g)))
+      --runquickspec cfg_max_size cfg_schemas -- all schemas at once
+      --runquickspec cfg_max_size [] -- no schema pre-filtering
+      --let small_size = 3
+      --runquickspec small_size [] -- exhaustively explore small terms
+      mapM_ (runquickspec cfg_max_size) $ map (\s -> [s]) cfg_schemas -- one schema at a time
       when (n > 0) $ do
         putLine ""
 
@@ -649,9 +658,23 @@ quickSpec cfg@Config{..} = do
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
 
-schema_term_filter ::[(String,Prop (Term Constant))] -> Term Constant -> Bool
-schema_term_filter s t = or $ map matchEqTerm $ map snd s
+----------------------------------------------------------------------
+-- * Schema stuff
+----------------------------------------------------------------------
+
+schema_term_filter' ::[(String,Prop (Term Constant))] -> Term Constant -> Bool
+schema_term_filter' s t = or $ map matchEqTerm $ map snd s
   where matchEqTerm (_ :=>: (sl :=: sr)) = (matchSchemaTerm sl t) || (matchSchemaTerm sr t)
+schemas_term_filter :: [(String,Prop (Term Constant))] -> Term Constant -> Bool
+schemas_term_filter [] _ = True
+schemas_term_filter s t = or $ map (flip schema_term_filter t) $ map snd s
+
+-- XXX: is this inefficient?
+schema_term_filter :: Prop (Term Constant) -> Term Constant -> Bool
+schema_term_filter p t = or $ map (flip matchSchemaTerm t) (schema_subterms p)
+
+schema_subterms :: Prop (Term Constant) -> [Term Constant]
+schema_subterms (_ :=>: (sl :=: sr)) = subterms sl ++ subterms sr
 
 showSchema :: String -> String
 showSchema "" = ""
@@ -671,45 +694,4 @@ matchEquations (s1 :=: s2) (p1 :=: p2) = (matchSchemaTermPairs [(s1,p1),(s2,p2)]
                                          (matchSchemaTermPairs [(s1,p2),(s2,p1)])
   where matchSchemaTermPairs = isJust . matchSchemaTermEnv Map.empty Map.empty
 
--- Matching for terms. Assumes that first argument may contain holes but not the second.
-matchSchemaTerm :: Term Constant -> Term Constant -> Bool
-matchSchemaTerm s t = isJust $ matchSchemaTermEnv Map.empty Map.empty [(s,t)]
-
-type SubstEnv = Map.Map String String
-type VarEnv   = Map.Map Int Int
-
-matchSchemaTermEnv :: SubstEnv -> VarEnv -> [(Term Constant, Term Constant)] -> Maybe (SubstEnv,VarEnv)
-matchSchemaTermEnv holesubst varsubst [] = Just (holesubst,varsubst)
-matchSchemaTermEnv holesubst varsubst ((Var v1, Var v2):ts) =
-  case matchVars varsubst v1 v2 of
-    (False,_) -> Nothing
-    (True, vs) -> matchSchemaTermEnv holesubst vs ts
-matchSchemaTermEnv holesubst varsubst ((Hole mv, t2):ts) =
-  case Map.lookup hid holesubst of
-    Nothing -> matchSchemaTermEnv (Map.insert hid st2 holesubst) varsubst ts
-    Just t -> if t == st2 then matchSchemaTermEnv holesubst varsubst ts else Nothing
-  where hid = hole_id mv
-        st2 = synrep t2
-matchSchemaTermEnv holesubst varsubst (((s1 :$: s2),(t1 :$: t2)):ts) =
-  case matchSchemaTermEnv holesubst varsubst [(s1,t1)] of
-    Nothing -> Nothing
-    Just (hs,vs) -> matchSchemaTermEnv hs vs ((s2,t2):ts)
-matchSchemaTermEnv hs vs  ((Fun f1, Fun f2):ts) = if f1 == f2
-  then matchSchemaTermEnv hs vs ts
-  else Nothing
-matchSchemaTermEnv _ _ _ = Nothing
-
-matchVars :: VarEnv -> Var -> Var -> (Bool, VarEnv)
-matchVars varsubsts v1 v2 = case Map.lookup vid1 varsubsts of
-  Nothing -> (True, Map.insert vid1 vid2 varsubsts)
-  Just k -> (k == vid2, varsubsts)
-  where vid1 = var_id v1
-        vid2 = var_id v2
-
--- Syntactic representation of terms (types were getting in the way)
-synrep :: Term Constant -> String
-synrep (Var v) = show $ var_id v
-synrep (Fun f) = con_name f
-synrep (t1 :$: t2) = synrep t1 ++ " " ++ synrep t2
-synrep (Hole mv) = hole_id mv
 
