@@ -1,7 +1,6 @@
 -- A stress test using lots and lots of list functions.
 {-# LANGUAGE ScopedTypeVariables, ConstraintKinds, RankNTypes, ConstraintKinds, FlexibleContexts #-}
 import QuickSpec
-import QuickSpec.Utils
 import Data.List
 import Control.Monad
 
@@ -23,7 +22,7 @@ main = quickSpec [
   con "zipWith" (zipWith :: (A -> B -> C) -> [A] -> [B] -> [C]),
   con "concat" (concat :: [[A]] -> [A]),
   con "zip" (zip :: [A] -> [B] -> [(A, B)]),
-  con "usort" (usort :: [Int] -> [Int]),
+  --con "usort" (usort :: [Int] -> [Int]),
   con "sum" (sum :: [Int] -> Int),
   con "++" ((++) :: [A] -> [A] -> [A]),
   con "map" (map :: (A -> B) -> [A] -> [B]),
@@ -38,4 +37,5 @@ main = quickSpec [
   con "[]" ([] :: [A]),
   con "partition" (partition :: (A -> Bool) -> [A] -> ([A], [A])),
   con "fst" (fst :: (A, B) -> A),
-  con "take" (take :: Int -> [A] -> [A]) ]
+  con "take" (take :: Int -> [A] -> [A])
+ ,schema "2-distributive" "?F(?G(X),?G(Y)) = ?G(?F(X,Y))" ]

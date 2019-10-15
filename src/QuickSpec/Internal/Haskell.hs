@@ -598,8 +598,8 @@ quickSpec cfg@Config{..} = do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
-          printf "%3d. %s" n $ show $
-          --printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
+          --printf "%3d. %s" n $ show $
+          printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
     -- XXX do this during testing
@@ -630,15 +630,20 @@ quickSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
-      let runquickspec tsize schemas =
+      let runquickspec False tsize schemas =
             QuickSpec.Internal.Explore.quickSpec
             pres (flip eval) tsize cfg_max_commutative_size singleUse univ
             (enumerator schemas (map Fun (constantsOf g)))
-      --runquickspec cfg_max_size cfg_schemas -- all schemas at once
-      --runquickspec cfg_max_size [] -- no schema pre-filtering
+          runquickspec True tsize schemas =
+            QuickSpec.Internal.Explore.quickSpec'
+            pres (flip eval) tsize cfg_max_commutative_size singleUse univ
+            (enumerator schemas (map Fun (constantsOf g)))
+            (concatMap schema_terms schemas) (concatMap schema_subterms schemas)
+      --runquickspec True cfg_max_size cfg_schemas -- all schemas at once
+      --runquickspec False cfg_max_size [] -- no schema pre-filtering
       --let small_size = 3
-      --runquickspec small_size [] -- exhaustively explore small terms
-      mapM_ (runquickspec cfg_max_size) $ map (\s -> [s]) cfg_schemas -- one schema at a time
+      --runquickspec False small_size [] -- exhaustively explore small terms
+      mapM_ (runquickspec True cfg_max_size) $ map (\s -> [s]) cfg_schemas -- one schema at a time
       when (n > 0) $ do
         putLine ""
 
@@ -667,14 +672,16 @@ schema_term_filter' s t = or $ map matchEqTerm $ map snd s
   where matchEqTerm (_ :=>: (sl :=: sr)) = (matchSchemaTerm sl t) || (matchSchemaTerm sr t)
 schemas_term_filter :: [(String,Prop (Term Constant))] -> Term Constant -> Bool
 schemas_term_filter [] _ = True
-schemas_term_filter s t = or $ map (flip schema_term_filter t) $ map snd s
+schemas_term_filter s t = or $ map (flip schema_term_filter t) s
 
--- XXX: is this inefficient?
-schema_term_filter :: Prop (Term Constant) -> Term Constant -> Bool
-schema_term_filter p t = or $ map (flip matchSchemaTerm t) (schema_subterms p)
+schema_term_filter :: (String, Prop (Term Constant)) -> Term Constant -> Bool
+schema_term_filter p t = or $ map (flip matchSchemaTerm t) (schema_subterms p ++ schema_terms p)
 
-schema_subterms :: Prop (Term Constant) -> [Term Constant]
-schema_subterms (_ :=>: (sl :=: sr)) = subterms sl ++ subterms sr
+schema_terms :: (String, Prop (Term Constant)) -> [Term Constant]
+schema_terms (_,(_ :=>: (sl :=: sr))) = [sl,sr]
+
+schema_subterms :: (String, Prop (Term Constant)) -> [Term Constant]
+schema_subterms (_,(_ :=>: (sl :=: sr))) = properSubterms sl ++ properSubterms sr
 
 showSchema :: String -> String
 showSchema "" = ""
@@ -682,7 +689,7 @@ showSchema s  = s ++ " property: "
 
 schema_filter :: [(String,Prop (Term Constant))] -> Prop (Term Constant) -> (Bool, String)
 schema_filter [] _ = (True,"")
-schema_filter [s] p = (fitSchema (snd s) p, fst s)
+schema_filter [s] p = if fitSchema (snd s) p then (True, fst s) else (False,"")
 schema_filter (s:ss@(_:_)) p = if fitSchema (snd s) p then (True, fst s)
                                   else schema_filter ss p
 

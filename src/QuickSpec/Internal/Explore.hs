@@ -88,6 +88,43 @@ quickSpec present eval maxSize maxCommutativeSize singleUse univ enum = do
 
   evalStateT (loop 0 maxSize (repeat [])) state0
 
+quickSpec' ::
+  (Ord fun, Ord norm, Sized fun, Typed fun, Ord result, PrettyTerm fun,
+  MonadPruner (Term fun) norm m, MonadTester testcase (Term fun) m, MonadTerminal m, SynRep fun) =>
+  (Prop (Term fun) -> m ()) ->
+  (Term fun -> testcase -> result) ->
+  Int -> Int -> (Type -> Bool) -> Universe -> Enumerator (Term fun) ->
+  [Term fun] -> [Term fun] -> m ()
+quickSpec' present eval maxSize maxCommutativeSize singleUse univ enum schemaTerms schemaSubTerms = do
+  let
+    state0 = initialState singleUse univ (\t -> size t <= maxCommutativeSize) eval
+
+    loop m n _ | m > n = return ()
+    loop m n tss = do
+      putStatus (printf "enumerating terms of size %d" m)
+      let
+        ts = enumerate (filterUniverse univ enum) m tss
+        total = length ts
+        consider (i, t) = do
+          putStatus (printf "testing terms of size %d: %d/%d" m i total)
+          if any (flip matchSchemaTerm t) schemaTerms
+            then do
+              res <- explore t -- only call explore for terms we're interested in properties of
+              putStatus (printf "testing terms of size %d: %d/%d" m i total)
+              lift $ mapM_ present (result_props res)
+              case res of
+                Accepted _ -> return True
+                Rejected _ -> return False -- $ any (flip matchSchemaTerm t) schemaSubTerms
+            else return $ any (flip matchSchemaTerm t) schemaSubTerms
+      us <- map snd <$> filterM consider (zip [1 :: Int ..] ts)
+      clearStatus
+      loop (m+1) n (appendAt m us tss)
+
+  evalStateT (loop 0 maxSize (repeat [])) state0
+
+
+
+
 ----------------------------------------------------------------------
 -- Functions that are not really to do with theory exploration,
 -- but are useful for printing the output nicely.
