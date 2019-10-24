@@ -26,7 +26,7 @@ data Term f = Var {-# UNPACK #-} !Var | Fun !f | !(Term f) :$: !(Term f) | Hole 
 data MetaVar = MV { hole_id :: String, hole_ty :: Type }
   deriving (Eq, Ord, Show)
 
--- | A variable, which has a type and a number. XXX what does the number represent?
+-- | A variable, which has a type and a number.
 data Var = V { var_ty :: !Type, var_id :: {-# UNPACK #-} !Int }
   deriving (Eq, Ord, Show, Generic)
 
@@ -302,6 +302,8 @@ matchVars varsubsts v1 v2 = case Map.lookup vid1 varsubsts of
   Just k -> (k == vid2, varsubsts)
   where vid1 = var_id v1
         vid2 = var_id v2
+
+
 
 -- Syntactic representation of terms (types were getting in the way)
 -- This is what makes all the matching stuff dependent on Constant (defined in Haskell.hs), not great

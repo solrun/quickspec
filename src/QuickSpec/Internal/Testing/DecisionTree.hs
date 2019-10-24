@@ -51,7 +51,7 @@ insert x dt@DecisionTree{dt_tree = Just dt_tree, ..} =
     aux _ [] (Singleton y) = EqualTo y
     aux k (t:ts) (Singleton y) =
       aux k (t:ts) $
-        TestCase (Map.singleton (dt_evaluate y t) (Singleton y)) 
+        TestCase (Map.singleton (dt_evaluate y t) (Singleton y))
     aux k (t:ts) (TestCase res) =
       let
         val = dt_evaluate x t

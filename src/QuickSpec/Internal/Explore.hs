@@ -88,14 +88,26 @@ quickSpec present eval maxSize maxCommutativeSize singleUse univ enum = do
 
   evalStateT (loop 0 maxSize (repeat [])) state0
 
+schemeSpec ::
+  (Ord fun, Ord norm, Sized fun, Typed fun, PrettyTerm fun,
+  MonadPruner (Term fun) norm m, MonadTester testcase (Term fun) m, MonadTerminal m) =>
+  (Prop (Term fun) -> m ()) ->
+  --(Term fun -> testcase -> result) ->
+  --(Type -> Bool) -> Universe -> -- what do these do?
+  Enumerator (Term fun) -> -- FIXME something else here
+  m ()
+schemeSpec present smth = undefined
+-- We are looking at a list of equations/properties rather than terms
+-- for each one we test it (start as simple as possible)
+{-
 quickSpec' ::
   (Ord fun, Ord norm, Sized fun, Typed fun, Ord result, PrettyTerm fun,
   MonadPruner (Term fun) norm m, MonadTester testcase (Term fun) m, MonadTerminal m, SynRep fun) =>
   (Prop (Term fun) -> m ()) ->
   (Term fun -> testcase -> result) ->
   Int -> Int -> (Type -> Bool) -> Universe -> Enumerator (Term fun) ->
-  [Term fun] -> [Term fun] -> m ()
-quickSpec' present eval maxSize maxCommutativeSize singleUse univ enum schemaTerms schemaSubTerms = do
+  Equation (Term fun) -> [Term fun] -> [Term fun] -> m ()
+quickSpec' present eval maxSize maxCommutativeSize singleUse univ enum schema schemaTerms schemaSubTerms = do
   let
     state0 = initialState singleUse univ (\t -> size t <= maxCommutativeSize) eval
 
@@ -109,7 +121,7 @@ quickSpec' present eval maxSize maxCommutativeSize singleUse univ enum schemaTer
           putStatus (printf "testing terms of size %d: %d/%d" m i total)
           if any (flip matchSchemaTerm t) schemaTerms
             then do
-              res <- explore t -- only call explore for terms we're interested in properties of
+              res <- exploreWithSchema schema t -- only call explore for terms we're interested in properties of
               putStatus (printf "testing terms of size %d: %d/%d" m i total)
               lift $ mapM_ present (result_props res)
               case res of
@@ -121,7 +133,7 @@ quickSpec' present eval maxSize maxCommutativeSize singleUse univ enum schemaTer
       loop (m+1) n (appendAt m us tss)
 
   evalStateT (loop 0 maxSize (repeat [])) state0
-
+-}
 
 
 

@@ -112,6 +112,42 @@ exploreNoMGU t = do
   where
     mapProps f (Accepted props) = Accepted (map f props)
     mapProps f (Rejected props) = Rejected (map f props)
+{-
+exploreWithSchema ::
+  (PrettyTerm fun, Ord result, Ord norm, Typed fun, Ord fun, Apply (Term fun),
+  MonadTester testcase (Term fun) m, MonadPruner (Term fun) norm m, MonadTerminal m) =>
+  Equation (Term fun) -> Term fun ->
+  StateT (Polymorphic testcase result fun norm) m (Result fun)
+exploreWithSchema s t = do
+  univ <- access univ
+  unless (t `usefulForUniverse` univ) $
+    error ("Type " ++ prettyShow (typ t) ++ " not in universe for " ++ prettyShow t)
+  if not (t `inUniverse` univ) then
+    return (Accepted [])
+   else do
+    res <- exploreWSNoMGU s t
+    case res of
+      Rejected{} -> return res
+      Accepted{} -> do
+        ress <- forM (typeInstances univ t) $ \u ->
+          exploreNoMGU u
+        return res { result_props = concatMap result_props (res:ress) }
+-}
+exploreWSNoMGU ::
+  (PrettyTerm fun, Ord result, Ord norm, Typed fun, Ord fun, Apply (Term fun),
+  MonadTester testcase (Term fun) m, MonadPruner (Term fun) norm m, MonadTerminal m) =>
+  Equation (Term fun) -> Term fun ->
+  StateT (Polymorphic testcase result fun norm) m (Result fun)
+exploreWSNoMGU s t = do
+  univ <- access univ
+  if not (t `inUniverse` univ) then return (Rejected []) else do
+    schemas1 <- access schemas
+    (res, schemas2) <- unPolyM (runStateT (Schemas.explore (polyTerm t)) schemas1) -- FIXME
+    schemas ~= schemas2
+    return (mapProps (regeneralise . mapFun fun_original) res)
+  where
+    mapProps f (Accepted props) = Accepted (map f props)
+    mapProps f (Rejected props) = Rejected (map f props)
 
 instance (PrettyTerm fun, Ord fun, Typed fun, Apply (Term fun), MonadPruner (Term fun) norm m, MonadTerminal m) =>
   MonadPruner (Term (PolyFun fun)) norm (PolyM testcase result fun norm m) where
@@ -221,7 +257,7 @@ universe xs = Universe (Set.fromList univ)
           | fun <- types,
             ho <- arrows fun,
             sub <- typeInstancesList univBase (components fun) ]
-  
+
     -- Now close the type universe under "anti-substitution":
     -- if u = typeSubst sub t, and u is in the universe, then
     -- oneTypeVar t should be in the universe.
@@ -247,7 +283,7 @@ universe xs = Universe (Set.fromList univ)
             Just (arg, res) ->
               [ty] ++ arrows1 arg ++ arrows1 res
             _ -> []
- 
+
 inUniverse :: (PrettyTerm fun, Typed fun) => Term fun -> Universe -> Bool
 t `inUniverse` Universe{..} =
   and [oneTypeVar (typ u) `Set.member` univ_types | u <- subtermsFO t ++ map Var (vars t)]
