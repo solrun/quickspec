@@ -357,6 +357,7 @@ testSig = [
   con "map" (map :: (A -> B) -> [A] -> [B]),
   con "length" (length :: [A] -> Int),
   con "concat" (concat :: [[A]] -> [A]),
+  schema "" "?F(A) = ?G(A)",
   schema "" "?F(A) = ?F(?F(A))",
   schema "commutative" "?F(X,Y) = ?F(Y,X)"]
 
