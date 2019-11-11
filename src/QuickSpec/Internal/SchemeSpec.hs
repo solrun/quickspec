@@ -22,14 +22,23 @@ import qualified QuickSpec.Internal.Pruning.Twee as Twee
 import QuickSpec.Internal.Haskell
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Prop
+import QuickSpec.Internal.Type
+import Test.QuickCheck hiding (total, classify, subterms, Fun)
+import QuickSpec.Internal.Explore.Conditionals
+import QuickSpec.Internal.Haskell.Resolve
+import QuickSpec.Internal.Pruning
+import QuickSpec.Internal.Explore hiding (quickSpec)
+import Control.Monad
+import Control.Monad.Trans.State.Strict
+import QuickSpec.Internal.Terminal
+import Text.Printf
+import QuickSpec.Internal.SchemeSpec.PropGen
 
--- FIXME!
--- What we want here:
 -- Generate properties based on schema + functions in scope
 -- Test properties
 -- Present properties where testing didn't find counterexample
 
-schemeSpec :: Config -> IO [Prop (Term Constant)]
+schemeSpec :: Config -> IO ()
 schemeSpec cfg@Config{..} = do
   let
     constantsOf f =
@@ -42,67 +51,57 @@ schemeSpec cfg@Config{..} = do
 
     eval = evalHaskell cfg_default_to instances
 
-    present funs prop = do
-      norm <- normaliser
-      let sf = schema_filter cfg_schemas prop
-      let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      --when (cfg_print_filter prop && (fst sf)) $ do -- post-filtering
-      when (cfg_print_filter prop) $ do -- no post-filtering
-        (n :: Int, props) <- get
-        put (n+1, prop':props)
-        putLine $
-          --printf "%3d. %s" n $ show $
-          printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
-            prettyProp (names instances) prop' <+> disambiguatePropType prop
+   -- present funs prop = do
+   --   norm <- normaliser
+   --   --let sf = schema_filter cfg_schemas prop
+   --   let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
+   --   --when (cfg_print_filter prop && (fst sf)) $ do -- post-filtering
+   --   when (cfg_print_filter prop) $ do -- no post-filtering
+   --     (n :: Int, props) <- get
+   --     put (n+1, prop':props)
+   --     putLine $
+   --       --printf "%3d. %s" n $ show $
+   --       --printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
+   --       printf "%3d. %s%s" n $ show $
+   --         prettyProp (names instances) prop' <+> disambiguatePropType prop
 
-    -- XXX do this during testing
-    constraintsOk = memo $ \con ->
-      or [ and [ isJust (findValue instances (defaultTo cfg_default_to constraint)) | constraint <- con_constraints (typeSubst sub con) ]
-         | ty <- Set.toList (univ_types univ),
-           sub <- maybeToList (matchType (typeRes (typ con)) ty) ]
-
-    --conditions t = usort [p | f <- funs t, Selector _ p _ <- [classify f]]
-
-    --singleUse ty =
-    --  isJust (findInstance instances ty :: Maybe (Value SingleUse))
     mainOf n f g = do
       unless (null (f cfg_constants)) $ do
-        putLine $ show $ pPrintSignature
+        putStrLn $ show $ pPrintSignature
           (map (Fun . unhideConstraint) (f cfg_constants))
-        putLine ""
+        putStrLn ""
       when (n > 0) $ do
-        putText (prettyShow (warnings univ instances cfg))
-        putLine "== Laws =="
-      let pres = if n == 0 then \_ -> return () else present (constantsOf f)
-      --let runquickspec False tsize schemas =
-      --      QuickSpec.Internal.Explore.quickSpec
-      --      pres (flip eval) tsize cfg_max_commutative_size singleUse univ
-      --      (enumerator schemas (map Fun (constantsOf g)))
-      --    runquickspec True tsize schemas =
-      --      QuickSpec.Internal.Explore.quickSpec
-      --      pres (flip eval) tsize cfg_max_commutative_size singleUse univ
-      --      (enumerator schemas (map Fun (constantsOf g)))
-            --(concatMap schema_terms schemas) (concatMap schema_subterms schemas)
-      --runquickspec True cfg_max_size cfg_schemas -- all schemas at once
-      --runquickspec False cfg_max_size [] -- no schema pre-filtering
-      --let small_size = 3
-      --runquickspec False small_size [] -- exhaustively explore small terms
-      mapM_ (runquickspec True cfg_max_size) $ map (\s -> [s]) cfg_schemas -- one schema at a time
+        putStr (prettyShow (warnings univ instances cfg))
+        putStrLn "== Laws =="
+      --let pres = if n == 0 then \_ -> return () else present (constantsOf f)
+      let testpres prop = do
+            p <- testProp prop
+            case p of
+              Just pp -> putStrLn $ prettyShow pp
+      let runschemespec schema = do
+            let testprops = schemaProps (snd schema) (constantsOf f)
+            mapM_ testpres testprops
+      mapM_ runschemespec cfg_schemas
       when (n > 0) $ do
-        putLine ""
+        putStrLn ""
 
-    main = do
-      forM_ cfg_background $ \prop -> do
-        add prop
-      mapM_ round [0..rounds-1]
-      where
-        round n = mainOf n (concat . take 1 . drop n) (concat . take (n+1))
-        rounds = length cfg_constants
+    --main = do
+ -- forM_ cfg_background $ \prop -> do
+ --   add prop
+    round n = mainOf n (concat . take 1 . drop n) (concat . take (n+1))
+    numrounds = length cfg_constants
+  mapM_ round [0..numrounds-1]
+--  where
 
-  join $
-    fmap withStdioTerminal $
-    generate $
-    QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
-    Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
-    runConditionals constants $
-    fmap (reverse . snd) $ flip execStateT (1, []) main
+  --join $
+  --  fmap withStdioTerminal $
+  --  generate $
+  --  QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
+  --  Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
+  --  runConditionals constants $
+  --  fmap (reverse . snd) $ flip execStateT (1, []) main
+
+testProp :: Prop (Term Constant) -> IO (Maybe (Prop (Term Constant)))
+testProp p@(_ :=>: (lt :=: rt)) = do
+  r <- Test.QuickCheck.quickCheckResult (lt == rt)
+  if isSuccess r then return (Just p) else return Nothing

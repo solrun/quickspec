@@ -98,7 +98,8 @@ library
     QuickSpec.Internal.Testing.QuickCheck
     QuickSpec.Internal.Type
     QuickSpec.Internal.Utils
-
+    QuickSpec.Internal.SchemeSpec
+    QuickSpec.Internal.SchemeSpec.PropGen
   Build-depends:
     QuickCheck >= 2.10,
     quickcheck-instances >= 0.3.16,

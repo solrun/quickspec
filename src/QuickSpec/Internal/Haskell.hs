@@ -50,9 +50,6 @@ import qualified Data.Set as Set
 import qualified Test.QuickCheck.Poly as Poly
 import Numeric.Natural
 import Test.QuickCheck.Instances()
-import qualified Data.Map.Strict as Map
-
-import Debug.Trace
 
 baseInstances :: Instances
 baseInstances =
