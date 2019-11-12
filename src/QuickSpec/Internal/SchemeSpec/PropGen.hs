@@ -13,10 +13,6 @@ import Debug.Trace
 -- Schema-based term generation
 -----------------------------------------------------------------
 
--- FIXME: make sure variables with the same name end up with the same type (otherwise shouldn't be an accepted filling)
-
-
-
 schemaProps :: Prop (Term Constant) -> [Constant] -> [Prop (Term Constant)]
 schemaProps (_ :=>: (sl :=: sr)) cs = map (\(lt,rt) -> ([] :=>: (lt :=: rt))) $ fillHoles (sl,sr) cs
 
@@ -57,13 +53,14 @@ allFillings holes cs = map (\h -> (h, filter (feasibleFill h) cs)) holes
 -- Try to fill the holes in the given term using the given map of fillings
 canFill :: Map.Map String Constant -> Map.Map Int Type -> Term Constant -> Maybe (Term Constant, Map.Map Int Type)
 canFill fillings vartypes (Hole mv) = case Map.lookup (hole_id mv) fillings of
-  Nothing -> trace ("no filling for hole " ++ (hole_id mv)) Nothing
+  Nothing -> --trace ("no filling for hole " ++ (hole_id mv))
+    Nothing
   Just f -> --trace ("filling hole " ++ (hole_id mv) ++ " with " ++ con_name f)
     Just (Fun f, vartypes)
 canFill _ vartypes (Var v) = case Map.lookup vid vartypes of
-  Nothing -> trace ("variable: "++ prettyShow v)
+  Nothing -> --trace ("variable: "++ prettyShow v)
     Just (Var v, Map.insert vid vtype vartypes)
-  Just t -> trace ("types: "++ prettyShow t ++ prettyShow vtype) $
+  Just t -> --trace ("types: "++ prettyShow t ++ prettyShow vtype) $
             if (isJust $ matchType t vtype) && (isJust $ matchType t vtype)
             then Just (Var v, vartypes)
             else Nothing
