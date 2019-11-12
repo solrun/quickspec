@@ -19,6 +19,7 @@ schemaProps (_ :=>: (sl :=: sr)) cs = map (\(lt,rt) -> ([] :=>: (lt :=: rt))) $ 
 schemaSides :: Prop (Term Constant) -> (Term Constant, Term Constant)
 schemaSides (_ :=>: (sl :=: sr)) = (sl,sr)
 
+
 fillHoles :: (Term Constant, Term Constant) -> [Constant] -> [(Term Constant, Term Constant)]
 fillHoles (lh, rh) cs = concatMap (tryFill (lh,rh)) options
   where options = findFillings (lh,rh) cs
@@ -26,7 +27,7 @@ fillHoles (lh, rh) cs = concatMap (tryFill (lh,rh)) options
           Nothing -> []
           Just (t1', vts) -> case canFill m vts t2 of
             Nothing -> []
-            Just (t2', _) -> [(t1',t2')]
+            Just (t2', _) ->  if (t1' == t2') then [] else [(t1',t2')]
 
 -- Take schema and list of functions, returns a list of maps with hole names as keys and
 -- possible fillings for those holes as values

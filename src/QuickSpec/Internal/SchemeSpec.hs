@@ -78,8 +78,8 @@ schemeSpec cfg@Config{..} = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
       let testpres prop = testProp pres prop
       let runschemespec schema = do
-            putLine (fst schema)
-            let testprops = schemaProps (snd schema) (constantsOf f)
+            --putLine (fst schema)
+            let testprops = schemaProps (snd schema) (constantsOf g)
             mapM_ testpres testprops
       mapM_ runschemespec cfg_schemas
       when (n > 0) $ do

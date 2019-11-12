@@ -15,6 +15,7 @@ mySig = [
   ,schema "distributive" "?F(?G(X)) = ?G(?F(X))"--
   ,schema "2-distributive" "?F(?G(X),?G(Y)) = ?G(?F(X,Y))"
   ,schema "commutative" "?F(?G(X,Y)) = ?F(?G(Y,X))"
+  ,schema "id" "?F(?X) = ?X"
   --schema "" "?F(?G(A),?H(A)) = ?F(?H(A),?G(A))",
   --schema "" "?F(A) = ?G(A)",
   --schema "" "?F(A) = ?F(?F(A))",
