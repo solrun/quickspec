@@ -78,7 +78,7 @@ schemeSpec cfg@Config{..} = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
       let testpres prop = testProp pres prop
       let runschemespec schema = do
-            --putLine (fst schema)
+            putLine ("Searching for " ++ fst schema ++ " properties...")
             let testprops = schemaProps (snd schema) (constantsOf g)
             mapM_ testpres testprops
       mapM_ runschemespec cfg_schemas
