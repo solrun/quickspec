@@ -112,27 +112,7 @@ exploreNoMGU t = do
   where
     mapProps f (Accepted props) = Accepted (map f props)
     mapProps f (Rejected props) = Rejected (map f props)
-{-
-exploreWithSchema ::
-  (PrettyTerm fun, Ord result, Ord norm, Typed fun, Ord fun, Apply (Term fun),
-  MonadTester testcase (Term fun) m, MonadPruner (Term fun) norm m, MonadTerminal m) =>
-  Equation (Term fun) -> Term fun ->
-  StateT (Polymorphic testcase result fun norm) m (Result fun)
-exploreWithSchema s t = do
-  univ <- access univ
-  unless (t `usefulForUniverse` univ) $
-    error ("Type " ++ prettyShow (typ t) ++ " not in universe for " ++ prettyShow t)
-  if not (t `inUniverse` univ) then
-    return (Accepted [])
-   else do
-    res <- exploreWSNoMGU s t
-    case res of
-      Rejected{} -> return res
-      Accepted{} -> do
-        ress <- forM (typeInstances univ t) $ \u ->
-          exploreNoMGU u
-        return res { result_props = concatMap result_props (res:ress) }
--}
+
 exploreWSNoMGU ::
   (PrettyTerm fun, Ord result, Ord norm, Typed fun, Ord fun, Apply (Term fun),
   MonadTester testcase (Term fun) m, MonadPruner (Term fun) norm m, MonadTerminal m) =>
@@ -207,7 +187,11 @@ regeneralise =
     restrict prop = typeSubst sub prop
       where
         Just sub = Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs))
-        cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs] ++ concatMap litCs (lhs prop) ++ litCs (rhs prop) ++ [(hole_ty x, hole_ty y) | x:xs <- hs, y <- xs]
+        cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs]
+          ++ concatMap litCs (lhs prop)
+          ++ litCs (rhs prop)
+          -- forces all occurrences of a hole to have the same type, we may want to be less restrictive
+          ++ [(hole_ty x, hole_ty y) | x:xs <- hs, y <- xs]
         -- Two variables that were equal before generalisation must have the
         -- same type afterwards
         vs = partitionBy skel (concatMap vars (terms prop))

@@ -295,7 +295,7 @@ instance SynRep Constant where
 
 con :: Typeable a => String -> a -> Constant
 con name val =
-  constant' name (toValue (Identity val))
+  constant' name $ oneTypeVar (toValue (Identity val)) -- TODO: toggle whether or not oneTypeVar is called
 
 constant' :: String -> Value Identity -> Constant
 constant' name val =

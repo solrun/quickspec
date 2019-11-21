@@ -97,7 +97,8 @@ con name x =
 schema :: String -> String -> Sig
 schema name rep =
   Sig $ \_ cfg -> cfg {Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ [(name, p cfg)]}
-  where p c = Polymorphic.regeneralise $ parseProp (parseFromConfig c) rep :: Prop (Term Haskell.Constant)
+  where p c = Polymorphic.regeneralise $
+              parseProp (parseFromConfig c) rep :: Prop (Term Haskell.Constant)
 
 -- | Add a custom constant.
 customConstant :: Haskell.Constant -> Sig

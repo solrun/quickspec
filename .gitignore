@@ -44,3 +44,4 @@ statem-laws/
 *.o
 *.hi
 *.dyn*
+test*
