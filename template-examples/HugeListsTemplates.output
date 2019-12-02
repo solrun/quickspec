@@ -1,0 +1,102 @@
+Searching for 2-2-distributive properties...
+Searching for 1-2-distributive properties...
+Searching for analogy-distributive properties...
+Searching for commutative properties...
+Searching for nest-commutative properties...
+Searching for associative-3 properties...
+Searching for cancel properties...
+Searching for cancel-2 properties...
+Searching for comp-id properties...
+Searching for op-id-elem properties...
+Searching for op-zero-elem properties...
+Searching for fix-point properties...
+== Functions ==
+   length :: [a] -> Int
+     sort :: [Int] -> [Int]
+    scanr :: (a -> a -> a) -> a -> [a] -> [a]
+     succ :: Int -> Int
+    (>>=) :: [a] -> (a -> [a]) -> [a]
+      snd :: (a, a) -> a
+  reverse :: [a] -> [a]
+        0 :: Int
+      (,) :: a -> a -> (a, a)
+    (>=>) :: (a -> [a]) -> (a -> [a]) -> a -> [a]
+      (:) :: a -> [a] -> [a]
+    break :: (a -> Bool) -> [a] -> ([a], [a])
+   filter :: (a -> Bool) -> [a] -> [a]
+    scanl :: (a -> a -> a) -> a -> [a] -> [a]
+  zipWith :: (a -> a -> a) -> [a] -> [a] -> [a]
+   concat :: [[a]] -> [a]
+      zip :: [a] -> [a] -> [(a, a)]
+    usort :: [Int] -> [Int]
+      sum :: [Int] -> Int
+     (++) :: [a] -> [a] -> [a]
+      map :: (a -> a) -> [a] -> [a]
+    foldl :: (a -> a -> a) -> a -> [a] -> a
+takeWhile :: (a -> Bool) -> [a] -> [a]
+    foldr :: (a -> a -> a) -> a -> [a] -> a
+     drop :: Int -> [a] -> [a]
+dropWhile :: (a -> Bool) -> [a] -> [a]
+     span :: (a -> Bool) -> [a] -> ([a], [a])
+    unzip :: [(a, a)] -> ([a], [a])
+      (+) :: Int -> Int -> Int
+       [] :: [a]
+partition :: (a -> Bool) -> [a] -> ([a], [a])
+      fst :: (a, a) -> a
+     take :: Int -> [a] -> [a]
+
+== Laws ==
+Searching for 2-2-distributive properties...
+  1. filter p (xs ++ ys) = filter p xs ++ filter p ys
+  2. map f (xs ++ ys) = map f xs ++ map f ys
+Searching for 1-2-distributive properties...
+  3. filter p (sort xs) = sort (filter p xs)
+  4. filter p (reverse xs) = reverse (filter p xs)
+  5. filter p (usort xs) = usort (filter p xs)
+  6. map f (reverse xs) = reverse (map f xs)
+  7. x + succ y = succ (x + y)
+Searching for analogy-distributive properties...
+  8. length xs + length ys = length (xs ++ ys)
+  9. concat xss ++ concat yss = concat (xss ++ yss)
+ 10. sum xs + sum ys = sum (xs ++ ys)
+Searching for commutative properties...
+ 11. x + y = y + x
+Searching for nest-commutative properties...
+ 12. length (zip xs ys) = length (zip ys xs)
+ 13. length (xs ++ ys) = length (ys ++ xs)
+ 14. sort (xs ++ ys) = sort (ys ++ xs)
+ 15. usort (xs ++ ys) = usort (ys ++ xs)
+ 16. sum (xs ++ ys) = sum (ys ++ xs)
+ 17. succ (x + y) = succ (y + x)
+Searching for associative-3 properties...
+ 18. (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
+ 19. (x + y) + z = x + (y + z)
+Searching for cancel properties...
+ 20. length (sort xs) = length ys
+ 21. length (reverse xs) = length xs
+ 22. sort (sort xs) = sort xs
+ 23. sort (reverse xs) = sort xs
+ 24. usort (sort xs) = usort xs
+ 25. usort (reverse xs) = usort xs
+ 26. usort (usort xs) = usort xs
+ 27. sum (sort xs) = sum xs
+ 28. sum (reverse xs) = sum xs
+Searching for cancel-2 properties...
+ 29. length (map f xs) = length xs
+Searching for comp-id properties...
+ 30. reverse (reverse xs) = xs
+Searching for op-id-elem properties...
+ 31. x + 0 = x
+ 32. xs ++ [] = xs
+Searching for op-zero-elem properties...
+ 33. filter p [] = []
+ 34. map f [] = []
+ 35. takeWhile p [] = []
+ 36. drop x [] = []
+ 37. dropWhile p [] = []
+ 38. take x [] = []
+Searching for fix-point properties...
+ 39. sort [] = []
+ 40. reverse [] = []
+ 41. usort [] = []
+
