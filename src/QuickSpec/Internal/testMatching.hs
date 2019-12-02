@@ -6,7 +6,7 @@ import QuickSpec.Internal.Explore.Polymorphic
 import qualified Data.Map.Strict as Map
 import QuickSpec.Internal
 import QuickSpec
-testSig = [
+mySig = [
   con "reverse" (reverse :: [A] -> [A]),
   con "++" ((++) :: [A] -> [A] -> [A]),
   con "[]" ([] :: [A]),
