@@ -607,9 +607,8 @@ quickSpec cfg@Config{..} = do
          | ty <- Set.toList (univ_types univ),
            sub <- maybeToList (matchType (typeRes (typ con)) ty) ]
 
-    enumerator schemas cons =
+    enumerator cons =
       sortTerms measure $
-      filterEnumerator (schemas_term_filter schemas) $ -- TODO: This has very little effect, maybe skip it?
       filterEnumerator (all constraintsOk . funs) $
       filterEnumerator (\t -> size t + length (conditions t) <= cfg_max_size) $
       enumerateConstants atomic `mappend` enumerateApplications
@@ -629,20 +628,9 @@ quickSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
-      let runquickspec False tsize schemas =
-            QuickSpec.Internal.Explore.quickSpec
-            pres (flip eval) tsize cfg_max_commutative_size singleUse univ
-            (enumerator schemas (map Fun (constantsOf g)))
-          runquickspec True tsize schemas =
-            QuickSpec.Internal.Explore.quickSpec
-            pres (flip eval) tsize cfg_max_commutative_size singleUse univ
-            (enumerator schemas (map Fun (constantsOf g)))
-            --(concatMap schema_terms schemas) (concatMap schema_subterms schemas)
-      --runquickspec True cfg_max_size cfg_schemas -- all schemas at once
-      --runquickspec False cfg_max_size [] -- no schema pre-filtering
-      --let small_size = 3
-      --runquickspec False small_size [] -- exhaustively explore small terms
-      mapM_ (runquickspec True cfg_max_size) $ map (\s -> [s]) cfg_schemas -- one schema at a time
+      QuickSpec.Internal.Explore.quickSpec
+        pres (flip eval) cfg_max_size cfg_max_commutative_size singleUse univ
+        (enumerator (map Fun (constantsOf g)))
       when (n > 0) $ do
         putLine ""
 

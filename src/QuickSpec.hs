@@ -68,6 +68,8 @@ module QuickSpec(
   -- * Running QuickSpec
   quickSpec, Sig, Signature(..),
 
+  qqSpec,
+
   -- * Declaring functions and predicates
   con, predicate, predicateGen,
   -- ** Type variables for polymorphic functions
@@ -90,7 +92,7 @@ module QuickSpec(
   -- * Customising QuickSpec
   withMaxTermSize, withMaxTests, withMaxTestSize, defaultTo,
   withPruningDepth, withPruningTermSize, withFixedSeed,
-  withInferInstanceTypes, schema,
+  withInferInstanceTypes, template,
 
   -- * Re-exported functionality
   Typeable, (:-)(..), Dict(..), Proxy(..), Arbitrary) where

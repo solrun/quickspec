@@ -29,6 +29,8 @@ import System.Environment
 import Data.Semigroup(Semigroup(..))
 import QuickSpec.Internal.Parse
 
+import QuickSpec.Internal.SchemeSpec(schemeSpec)
+
 -- | Run QuickSpec. See the documentation at the top of this file.
 quickSpec :: Signature sig => sig -> IO ()
 quickSpec sig = do
@@ -93,9 +95,9 @@ con name x =
     if name `elem` names then id else
       unSig (customConstant (Haskell.con name x)) ctx
 
--- declare a schema with a given name and a string representation
-schema :: String -> String -> Sig
-schema name rep =
+-- declare a template with a given name and a string representation
+template :: String -> String -> Sig
+template name rep =
   Sig $ \_ cfg -> cfg {Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ [(name, p cfg)]}
   where p c = Polymorphic.regeneralise $
               parseProp (parseFromConfig c) rep :: Prop (Term Haskell.Constant)
@@ -358,10 +360,16 @@ testSig = [
   con "map" (map :: (A -> B) -> [A] -> [B]),
   con "length" (length :: [A] -> Int),
   con "concat" (concat :: [[A]] -> [A]),
-  schema "" "?F(?G(A),?H(A)) = ?F(?H(A),?G(A))",
-  schema "" "?F(A) = ?G(A)",
-  schema "" "?F(A) = ?F(?F(A))",
-  schema "commutative" "?F(X,Y) = ?F(Y,X)"]
+  template "" "?F(?G(A),?H(A)) = ?F(?H(A),?G(A))",
+  template "" "?F(A) = ?G(A)",
+  template "" "?F(A) = ?F(?F(A))",
+  template "commutative" "?F(X,Y) = ?F(Y,X)",
+  template "" "?F(?G(X)) = ?F(X)"]
 
 makeConfig :: (Signature a) => a -> Haskell.Config
 makeConfig sig = runSig sig (Context 1 []) Haskell.defaultConfig
+
+qqSpec :: Signature sig => sig -> IO ()
+qqSpec s = do
+  schemeSpec $ makeConfig s
+  return ()

@@ -36,9 +36,12 @@ import QuickSpec.Internal.SchemeSpec.PropGen
 import QuickSpec.Internal.Testing
 
 import Debug.Trace
--- Generate properties based on schema + functions in scope
--- Test properties
--- Present properties where testing didn't find counterexample
+
+
+
+-- TODO: renaming
+-- TODO: documentation
+-- TODO: background handling!
 
 schemeSpec :: Config -> IO [Prop (Term Constant)]
 schemeSpec cfg@Config{..} = do
@@ -55,15 +58,11 @@ schemeSpec cfg@Config{..} = do
 
     present funs prop = do
       norm <- normaliser
-      --let sf = schema_filter cfg_schemas prop
       let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      --when (cfg_print_filter prop && (fst sf)) $ do -- post-filtering
-      when (cfg_print_filter prop) $ do -- no post-filtering
+      when (cfg_print_filter prop) $ do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
-          --printf "%3d. %s" n $ show $
-          --printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
@@ -102,14 +101,13 @@ schemeSpec cfg@Config{..} = do
     fmap (reverse . snd) $ flip execStateT (1, []) main
 
 -- TODO : handy to actually keep track of/present counterexamples for debugging purposes?
+-- TODO: Documentation
 testProp :: (MonadTester testcase (Term Constant) m) =>
             (Prop (Term Constant) -> m ()) ->
-            --(Term Constant -> testcase -> result) ->
             Prop (Term Constant) -> m ()
 testProp present p = do
   res <- test p
   case res of
     Nothing -> do
       present p
-    Just tc ->
-      return ()
+    Just tc -> return ()
