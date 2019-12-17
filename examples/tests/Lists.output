@@ -7,7 +7,7 @@
 reverse :: [a] -> [a]
    (++) :: [a] -> [a] -> [a]
      [] :: [a]
-    map :: (a -> b) -> [a] -> [b]
+    map :: (a -> a) -> [a] -> [a]
  length :: [a] -> Int
  concat :: [[a]] -> [a]
 
@@ -35,6 +35,5 @@ reverse :: [a] -> [a]
  21. map reverse (map (map f) xss) = map (map f) (map reverse xss)
  22. map f xs ++ map f ys = map f (xs ++ ys)
  23. map ((++) xs) (map ((++) ys) xss) = map ((++) (xs ++ ys)) xss
- 24. length (concat (map f (concat (reverse xss)))) = length (concat (map f (concat xss)))
- 25. length (concat (map ((++) (reverse xs)) xss)) = length (concat (map ((++) xs) xss))
+ 24. length (concat (map ((++) (reverse xs)) xss)) = length (concat (map ((++) xs) xss))
 
