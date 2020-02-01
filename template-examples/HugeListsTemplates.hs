@@ -50,5 +50,5 @@ main = qqSpec [
   ,template "op-id-elem" "?F(X,?G) = X"
   ,template "op-zero-elem" "?F(X,?G) = ?G"
   ,template "fix-point" "?F(?X) = ?X"
+  ,template "2o-2-2-distributive" "?F(?H(Z),?G(X,Y)) = ?G(?F(?H(Z),X),?F(?H(Z),Y))"
   ]
-
