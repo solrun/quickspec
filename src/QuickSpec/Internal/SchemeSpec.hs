@@ -66,19 +66,19 @@ schemeSpec cfg@Config{..} = do
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
-    mainOf n f g = do
-      unless (null (f cfg_constants)) $ do
+    mainOf n current sofar = do
+      unless (null (current cfg_constants)) $ do
         putLine $ show $ pPrintSignature
-          (map (Fun . unhideConstraint) (f cfg_constants))
+          (map (Fun . unhideConstraint) (current cfg_constants))
         putLine ""
       when (n > 0) $ do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
-      let pres = if n == 0 then \_ -> return () else present (constantsOf f)
+      let pres = if n == 0 then \_ -> return () else present (constantsOf current)
       let testpres prop = testProp pres prop
       let runschemespec schema = do
-            putLine ("Searching for " ++ fst schema ++ " properties...")
-            let testprops = schemaProps (snd schema) (constantsOf g)
+            when (n > 0) $ do putLine ("Searching for " ++ fst schema ++ " properties...")
+            let testprops = schemaProps (snd schema) (constantsOf sofar) (constantsOf current)
             mapM_ testpres testprops
       mapM_ runschemespec cfg_schemas
       when (n > 0) $ do
@@ -86,11 +86,13 @@ schemeSpec cfg@Config{..} = do
 
     main = do
       forM_ cfg_background $ \prop -> do
-        add prop
+        add prop -- added to pruner
       mapM_ round [0..numrounds-1]
       where
-        round n = mainOf n (concat . take 1 . drop n) (concat . take (n+1))
-        numrounds = length cfg_constants
+        round n        = mainOf n (currentRound n) (roundsSoFar n)
+        currentRound n = (concat . take 1 . drop n)
+        roundsSoFar n  = (concat . take (n+1))
+        numrounds      = length cfg_constants
 
   join $
     fmap withStdioTerminal $
