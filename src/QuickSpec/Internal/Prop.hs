@@ -13,7 +13,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad.Trans.State.Strict
 import Data.List
-import Data.Maybe(isJust)
+--import Data.Maybe(isJust)
 
 data Prop a =
   (:=>:) {
@@ -108,15 +108,3 @@ nameVars cands p =
           name = head (filter (`Set.notMember` s) names)
       modify (Set.insert name)
       return (x, Fun (Name name))
-
------------------------------
--- Schema stuff
------------------------------
-
-fitSchema :: (Eq f, SynRep f) => Prop (Term f) -> Prop (Term f) -> Bool
-fitSchema (_ :=>: s) (_ :=>: p)= matchEquations s p
-
-matchEquations :: (Eq f, SynRep f) => Equation (Term f) -> Equation (Term f) -> Bool
-matchEquations (s1 :=: s2) (p1 :=: p2) = (matchSchemaTermPairs [(s1,p1),(s2,p2)]) ||
-                                         (matchSchemaTermPairs [(s1,p2),(s2,p1)])
-  where matchSchemaTermPairs = isJust . matchSchemaTermEnv Map.empty Map.empty

@@ -100,6 +100,8 @@ library
     QuickSpec.Internal.Utils
     QuickSpec.Internal.SchemeSpec
     QuickSpec.Internal.SchemeSpec.PropGen
+    QuickSpec.Internal.SchemeSpec.Matching
+
   Build-depends:
     QuickCheck >= 2.10,
     quickcheck-instances >= 0.3.16,

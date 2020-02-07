@@ -26,7 +26,6 @@ import QuickSpec.Internal.Type
 import Test.QuickCheck hiding (total, classify, subterms, Fun)
 import QuickSpec.Internal.Explore.Conditionals
 import QuickSpec.Internal.Haskell.Resolve
-import QuickSpec.Internal.Pruning
 import QuickSpec.Internal.Explore hiding (quickSpec)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -34,6 +33,7 @@ import QuickSpec.Internal.Terminal
 import Text.Printf
 import QuickSpec.Internal.SchemeSpec.PropGen
 import QuickSpec.Internal.Testing
+import QuickSpec.Internal.SchemeSpec.Matching
 
 import Debug.Trace
 
@@ -41,7 +41,6 @@ import Debug.Trace
 
 -- TODO: renaming
 -- TODO: documentation
--- TODO: background handling!
 
 schemeSpec :: Config -> IO [Prop (Term Constant)]
 schemeSpec cfg@Config{..} = do
@@ -57,14 +56,27 @@ schemeSpec cfg@Config{..} = do
     eval = evalHaskell cfg_default_to instances
 
     present funs prop = do
-      norm <- normaliser
-      let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
+      --norm <- normaliser
+      let prop' = prettyDefinition funs (conditionalise prop)
+      --(prettyAC norm (conditionalise prop))
       when (cfg_print_filter prop) $ do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
+
+    testProp n current p = do
+      let pres = if n == 0 then \_ -> return () else present (constantsOf current)
+      res <- test p
+      case res of
+        Nothing -> do
+          (_, props) <- get
+          let thing = (or $ map (flip simplePrune p) props)
+          if thing
+            then return ()
+            else pres p
+        _ -> return ()
 
     mainOf n current sofar = do
       unless (null (current cfg_constants)) $ do
@@ -74,8 +86,7 @@ schemeSpec cfg@Config{..} = do
       when (n > 0) $ do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
-      let pres = if n == 0 then \_ -> return () else present (constantsOf current)
-      let testpres prop = testProp pres prop
+      let testpres prop = testProp n current prop
       let runschemespec schema = do
             when (n > 0) $ do putLine ("Searching for " ++ fst schema ++ " properties...")
             let testprops = schemaProps (snd schema) (constantsOf sofar) (constantsOf current)
@@ -85,8 +96,8 @@ schemeSpec cfg@Config{..} = do
         putLine ""
 
     main = do
-      forM_ cfg_background $ \prop -> do
-        add prop -- added to pruner
+      (n :: Int, props) <- get
+      put (n, cfg_background ++ props) -- TODO: test this
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
@@ -96,20 +107,7 @@ schemeSpec cfg@Config{..} = do
 
   join $
     fmap withStdioTerminal $
-    generate $
+    generate $ -- what does this do?
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
-    Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
     --runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
-
--- TODO : handy to actually keep track of/present counterexamples for debugging purposes?
--- TODO: Documentation
-testProp :: (MonadTester testcase (Term Constant) m) =>
-            (Prop (Term Constant) -> m ()) ->
-            Prop (Term Constant) -> m ()
-testProp present p = do
-  res <- test p
-  case res of
-    Nothing -> do
-      present p
-    Just tc -> return ()
