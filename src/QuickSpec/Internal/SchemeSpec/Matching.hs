@@ -12,7 +12,7 @@ import Debug.Trace
 simplePrune ::  (Eq f, PrettyTerm f) => Prop (Term f) -> Prop (Term f) -> Bool
 simplePrune (_ :=>: p1) (_ :=>: p2) = (matchEqs p1 p2) || (appMatch p1 p2)
 
-
+-- FIXME: what if it's not the last argument?
 -- Check whether p2 is an instance of applying the same function to both
 -- sides of p1
 -- appMatch p1 p2 is true if p1 = t1 == t2 and p2 = f t1 == f t2
@@ -27,7 +27,7 @@ matchEqs (l1 :=: r1) (l2 :=: r2) = matchTermPairs [(l1,l2),(r1,r2)] ||
                                    matchTermPairs [(l1,r2),(l2,r1)]
   where matchTermPairs = isJust . matchTerms Map.empty
 
-matchTerms :: (Eq f, PrettyTerm f)=> (Map.Map Int String) -> [(Term f, Term f)] -> Maybe (Map.Map Int String)
+matchTerms :: (Eq f, PrettyTerm f) => (Map.Map Int String) -> [(Term f, Term f)] -> Maybe (Map.Map Int String)
 matchTerms env [] = Just env
 matchTerms env ((Var v, t):ts) =
   case Map.lookup vid env of

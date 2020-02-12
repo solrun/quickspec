@@ -184,9 +184,10 @@ regeneralise =
           Twee.app f (aux n ts) `mappend`
           aux (n+Twee.lenList ts) us
 
-    restrict prop = typeSubst sub prop
+    restrict prop = case Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs)) of
+      Just sub -> typeSubst sub prop
+      Nothing -> error $ "Couldn't unify " ++ (prettyShow cs)
       where
-        Just sub = Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs))
         cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs]
           ++ concatMap litCs (lhs prop)
           ++ litCs (rhs prop)

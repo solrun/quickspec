@@ -97,7 +97,7 @@ schemeSpec cfg@Config{..} = do
 
     main = do
       (n :: Int, props) <- get
-      put (n, cfg_background ++ props) -- TODO: test this
+      put (n, cfg_background ++ props)
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
