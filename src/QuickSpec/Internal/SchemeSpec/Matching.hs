@@ -12,15 +12,22 @@ import Debug.Trace
 simplePrune ::  (Eq f, PrettyTerm f) => Prop (Term f) -> Prop (Term f) -> Bool
 simplePrune (_ :=>: p1) (_ :=>: p2) = (matchEqs p1 p2) || (appMatch p1 p2)
 
--- FIXME: what if it's not the last argument?
 -- Check whether p2 is an instance of applying the same function to both
 -- sides of p1
 -- appMatch p1 p2 is true if p1 = t1 == t2 and p2 = f t1 == f t2
 appMatch :: (Eq f, PrettyTerm f) => Equation (Term f) -> Equation (Term f) -> Bool
 appMatch e1 ((l21 :$: l22) :=: (r21 :$: r22)) =
-  (isJust $ matchTerms Map.empty [(l21,r21)]) &&
-  (appMatch e1 (l22 :=: r22) || matchEqs e1 (l22 :=: r22))
+  ((isJust $ matchTerms Map.empty [(l21,r21)]) &&
+  (appMatch e1 (l22 :=: r22) || matchEqs e1 (l22 :=: r22)))
+  || (appMatch' e1 (l21,r21) (l22,r22))
 appMatch _ _ = False
+
+appMatch' :: (Eq f, PrettyTerm f) => Equation (Term f) -> (Term f, Term f) -> (Term f, Term f) -> Bool
+appMatch' e (f1, f2) (lt@(l1 :$: l2), rt@(r1 :$: r2)) =
+  (matchEqs e (f1 :=: f2) && (isJust $ matchTerms Map.empty [(lt,rt)])) ||
+  appMatch' e (f1 :$: l1, f2 :$: r1) (l2,r2)
+appMatch' e (f1, f2) (lt, rt) =
+  (matchEqs e (f1 :=: f2) && (isJust $ matchTerms Map.empty [(lt,rt)]))
 
 matchEqs :: (Eq f, PrettyTerm f) => Equation (Term f) -> Equation (Term f) -> Bool
 matchEqs (l1 :=: r1) (l2 :=: r2) = matchTermPairs [(l1,l2),(r1,r2)] ||

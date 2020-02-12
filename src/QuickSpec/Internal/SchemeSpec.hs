@@ -16,16 +16,12 @@
 {-# LANGUAGE ConstraintKinds #-}
 module QuickSpec.Internal.SchemeSpec where
 
-import qualified Twee.Base as Twee
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
-import qualified QuickSpec.Internal.Pruning.Twee as Twee
 import QuickSpec.Internal.Haskell
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Prop
-import QuickSpec.Internal.Type
 import Test.QuickCheck hiding (total, classify, subterms, Fun)
 import QuickSpec.Internal.Explore.Conditionals
-import QuickSpec.Internal.Haskell.Resolve
 import QuickSpec.Internal.Explore hiding (quickSpec)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -35,7 +31,7 @@ import QuickSpec.Internal.SchemeSpec.PropGen
 import QuickSpec.Internal.Testing
 import QuickSpec.Internal.SchemeSpec.Matching
 
-import Debug.Trace
+--import Debug.Trace
 
 
 
