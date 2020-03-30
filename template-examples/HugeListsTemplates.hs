@@ -52,4 +52,5 @@ main = qqSpec [
   ,template "fix-point" "?F(?X) = ?X"
    -- example of a template producing larger properties
   ,template "2o-2-2-distributive" "?F(?H(Z),?G(X,Y)) = ?G(?F(?H(Z),X),?F(?H(Z),Y))"
+  ,template "hm" "?F(?G(X),?G(Y))=?F(?G(Y),?G(X))"
   ]

@@ -295,8 +295,9 @@ instance Background Constant
 
 con :: Typeable a => String -> a -> Constant
 con name val =
-  constant' name $ oneTypeVar (toValue (Identity val)) -- TODO: toggle whether or not oneTypeVar is called
-
+  constant' name $ toValue (Identity val)
+  --oneTypeVar (toValue (Identity val)) -- TODO: toggle whether or not oneTypeVar is called
+-- TODO: is oneTypeVar necessary here? has smarter prop generation already fixed this?
 constant' :: String -> Value Identity -> Constant
 constant' name val =
   Constant {

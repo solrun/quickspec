@@ -136,3 +136,9 @@ fixpoint f x = fxp x
       | otherwise = fxp y
       where
         y = f x
+
+-- Returns a list of all possible combinations of one element from each list in the input
+crossProd :: [[a]] -> [[a]]
+crossProd [] = [[]]
+crossProd (xs:xss) = [x:ys| x <- xs, ys <- yss]
+  where yss = crossProd xss
