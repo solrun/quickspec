@@ -20,6 +20,7 @@ import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
 import QuickSpec.Internal.Haskell
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Prop
+import QuickSpec.Internal.Type
 import Test.QuickCheck hiding (total, classify, subterms, Fun)
 import QuickSpec.Internal.Explore.Conditionals
 import QuickSpec.Internal.Explore hiding (quickSpec)
@@ -85,8 +86,11 @@ schemeSpec cfg@Config{..} = do
       let testpres prop = testProp n current prop
       let runschemespec schema = do
             when (n > 0) $ do putLine ("Searching for " ++ fst schema ++ " properties...")
-            let testprops = schemaProps (snd schema) (constantsOf sofar) (constantsOf current)
-            mapM_ testpres testprops
+            let testprops prop = schemaProps prop (constantsOf sofar) (constantsOf current)
+            let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
+            let expandedTemplates = concatMap (partialApp maxArity) $ nestApp (snd schema)
+            let testps = concatMap testprops expandedTemplates
+            mapM_ testpres testps
       mapM_ runschemespec cfg_schemas
       when (n > 0) $ do
         putLine ""
