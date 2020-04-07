@@ -32,7 +32,7 @@ import QuickSpec.Internal.SchemeSpec.PropGen
 import QuickSpec.Internal.Testing
 import QuickSpec.Internal.SchemeSpec.Matching
 
---import Debug.Trace
+import Debug.Trace
 
 
 
@@ -84,11 +84,12 @@ schemeSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let testpres prop = testProp n current prop
+      let testprops t = schemaProps t (constantsOf sofar) (constantsOf current)
+      let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
       let runschemespec schema = do
             when (n > 0) $ do putLine ("Searching for " ++ fst schema ++ " properties...")
-            let testprops prop = schemaProps prop (constantsOf sofar) (constantsOf current)
-            let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
-            let expandedTemplates = concatMap (partialApp maxArity) $ nestApp (snd schema)
+            let expandedTemplates = expandTemplate maxArity $ snd schema
+            putLine $ prettyShow expandedTemplates
             let testps = concatMap testprops expandedTemplates
             mapM_ testpres testps
       mapM_ runschemespec cfg_schemas

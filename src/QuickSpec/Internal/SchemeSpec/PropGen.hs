@@ -5,10 +5,9 @@ import QuickSpec.Internal.Haskell(Constant, con_type, con)
 import QuickSpec.Internal.Type
 import QuickSpec.Internal.Utils
 import qualified QuickSpec.Internal.Explore.Polymorphic as Polymorphic
-import qualified Twee.Label as Label
 
 import Data.Maybe(isJust)
-import Data.List(nub)
+import Data.List(nub, subsequences)
 import qualified Data.Map.Strict as Map
 
 import Debug.Trace
@@ -112,11 +111,15 @@ checkVars vartypes _ = Just vartypes
 -- Generalize templates
 ---------------------------------------------
 
+-- TODO: add argument for toggling expansion
+expandTemplate :: Int -> Prop (Term Constant) -> [Prop (Term Constant)]
+expandTemplate maxArity p = concatMap (partialApp maxArity) $ nestApp p
+
 -- partialApp maxArity p returns all possible expansions of p using partial application
 -- with up to maxArity variables
 partialApp :: Int -> Prop (Term Constant) -> [Prop (Term Constant)]
 partialApp maxArity p = nub [foldl partialExpand p c | c <- combos]
-  where combos = crossProd [[(i,h)|i <- [0..maxArity]]| h <- mvars p]
+  where combos = crossProd [[(i,h)|i <- [0..maxArity]]| h <- (nub $ mvars p)]
 -- Maybe not all these options make sense?
 
 -- Replace ?F with ?F X1 X2 ...
@@ -138,11 +141,7 @@ partialExpand' hid vns (t1 :$: t2) = (partialExpand' hid vns t1) :$: (partialExp
 partialExpand' _ _ x = x
 
 nestApp :: Prop (Term Constant) -> [Prop (Term Constant)]
-nestApp p = [foldl appExpand p fs| fs <- subsets (mvars p)]
-
-subsets :: [a] -> [[a]]
-subsets [] = []
-subsets (x:xs) = (subsets xs) ++ (map (\l -> x:l) (subsets xs))
+nestApp p = [foldl appExpand p fs| fs <- subsequences (nub $ mvars p)]
 
 -- TODO: test more cases
 -- Replace ?F with ?F1 applied to ?F2
@@ -150,14 +149,14 @@ appExpand :: Prop (Term Constant) -> MetaVar -> Prop (Term Constant)
 appExpand p m =  sprop (appExpand' h lh, appExpand' h rh)
   where h = hole_id m
         (lh,rh) = sides p
-        appExpand' mv x@(Hole mv' :@: ts) =
+        appExpand' mv (x@(Hole mv') :@: ts) =
           if hole_id mv' == mv
           then (Hole $ MV {hole_id = mv ++ "1", hole_ty = typeVar})
-               :$: ((Hole $ MV {hole_id = mv ++ "2", hole_ty = typeVar}) :@: ts)
-          else x
+               :$: ((Hole $ MV {hole_id = mv ++ "2", hole_ty = typeVar}) :@: ts')
+          else x :@: ts'
+          where ts' = map (appExpand' mv) ts
         appExpand' mv (t1 :$: t2) = (appExpand' mv t1 :$: appExpand' mv t2)
         appExpand' _ x = x
-        app = con "$" (($) :: (A -> B) -> A -> B)
 
 sides :: Prop a -> (a, a)
 sides (_ :=>: (sl :=: sr)) = (sl,sr)
