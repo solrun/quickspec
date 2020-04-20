@@ -651,32 +651,3 @@ quickSpec cfg@Config{..} = do
     runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
 
-------------------------------------------------------------------------
----- * Schema stuff
-------------------------------------------------------------------------
---
---schema_term_filter' ::[(String,Prop (Term Constant))] -> Term Constant -> Bool
---schema_term_filter' s t = or $ map matchEqTerm $ map snd s
---  where matchEqTerm (_ :=>: (sl :=: sr)) = (matchSchemaTerm sl t) || (matchSchemaTerm sr t)
---schemas_term_filter :: [(String,Prop (Term Constant))] -> Term Constant -> Bool
---schemas_term_filter [] _ = True
---schemas_term_filter s t = or $ map (flip schema_term_filter t) s
---
---schema_term_filter :: (String, Prop (Term Constant)) -> Term Constant -> Bool
---schema_term_filter p t = or $ map (flip matchSchemaTerm t) (schema_subterms p ++ schema_terms p)
---
---schema_terms :: (String, Prop (Term Constant)) -> [Term Constant]
---schema_terms (_,(_ :=>: (sl :=: sr))) = [sl,sr]
---
---schema_subterms :: (String, Prop (Term Constant)) -> [Term Constant]
---schema_subterms (_,(_ :=>: (sl :=: sr))) = properSubterms sl ++ properSubterms sr
---
---showSchema :: String -> String
---showSchema "" = ""
---showSchema s  = s ++ " property: "
---
---schema_filter :: [(String,Prop (Term Constant))] -> Prop (Term Constant) -> (Bool, String)
---schema_filter [] _ = (True,"")
---schema_filter [s] p = if fitSchema (snd s) p then (True, fst s) else (False,"")
---schema_filter (s:ss@(_:_)) p = if fitSchema (snd s) p then (True, fst s)
---                                  else schema_filter ss p

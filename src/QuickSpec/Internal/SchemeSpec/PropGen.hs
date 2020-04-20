@@ -141,7 +141,7 @@ partialExpand' hid vns (t1 :$: t2) = (partialExpand' hid vns t1) :$: (partialExp
 partialExpand' _ _ x = x
 
 nestApp :: Prop (Term Constant) -> [Prop (Term Constant)]
-nestApp p = [foldl appExpand p fs| fs <- subsequences (nub $ mvars p)]
+nestApp p = p : [appExpand p f | f <- nub $ mvars p]--[foldl appExpand p fs| fs <- subsequences (nub $ mvars p)]
 
 -- TODO: test more cases
 -- Replace ?F with ?F1 applied to ?F2

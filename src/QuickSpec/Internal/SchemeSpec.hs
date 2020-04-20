@@ -17,6 +17,7 @@
 module QuickSpec.Internal.SchemeSpec where
 
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
+import qualified QuickSpec.Internal.Pruning.Twee as Twee
 import QuickSpec.Internal.Haskell
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Prop
@@ -46,29 +47,30 @@ schemeSpec cfg@Config{..} = do
       [true | any (/= Function) (map classify (f cfg_constants))] ++
       f cfg_constants ++ concatMap selectors (f cfg_constants)
     constants = constantsOf concat
-
     univ = conditionalsUniverse (instanceTypes instances cfg) constants
     instances = cfg_instances `mappend` baseInstances
-
     eval = evalHaskell cfg_default_to instances
 
     present funs prop = do
+      --putLine $ prettyShow prop
       --norm <- normaliser
       let prop' = prettyDefinition funs (conditionalise prop)
       --(prettyAC norm (conditionalise prop))
       when (cfg_print_filter prop) $ do
-        (n :: Int, props) <- get
-        put (n+1, prop':props)
+        (n :: Int, props, cprops) <- get
+        put (n+1, prop':props, prop':cprops)
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
     testProp n current p = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
+      putLine "Testing..."
       res <- test p
       case res of
         Nothing -> do
-          (_, props) <- get
+          (_, props, cprops) <- get
+          putLine "Pruning..."
           let thing = (or $ map (flip simplePrune p) props)
           if thing
             then return ()
@@ -86,19 +88,27 @@ schemeSpec cfg@Config{..} = do
       let testpres prop = testProp n current prop
       let testprops t = schemaProps t (constantsOf sofar) (constantsOf current)
       let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
-      let runschemespec schema = do
-            when (n > 0) $ do putLine ("Searching for " ++ fst schema ++ " properties...")
-            let expandedTemplates = expandTemplate maxArity $ snd schema
-            putLine $ prettyShow expandedTemplates
-            let testps = concatMap testprops expandedTemplates
-            mapM_ testpres testps
-      mapM_ runschemespec cfg_schemas
+      let runschemespec schema = when (n > 0) $ do
+          putLine ("Searching for " ++ fst schema ++ " properties...")
+          putLine ("Generating expanded templates...")
+          let expandedTemplates = expandTemplate maxArity $ snd schema
+          putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
+          putLine "Generating properties for testing..."
+          let testps = concatMap testprops expandedTemplates
+          putLine "Testing properties ..."
+          mapM_ testpres testps
+      let runwithPruning schema = do
+          (n :: Int, props, cprops) <- get
+          put (n, props, []) -- We only want to give the pruner props found from the current schema
+          Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } (runschemespec schema) -- FIXME: This gives a type error
+
+      mapM_ runwithPruning cfg_schemas
       when (n > 0) $ do
         putLine ""
 
     main = do
-      (n :: Int, props) <- get
-      put (n, cfg_background ++ props)
+      (n :: Int, props, _) <- get
+      put (n, cfg_background ++ props, [])
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
@@ -108,7 +118,7 @@ schemeSpec cfg@Config{..} = do
 
   join $
     fmap withStdioTerminal $
-    generate $ -- what does this do?
+    generate $ 
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
     --runConditionals constants $
-    fmap (reverse . snd) $ flip execStateT (1, []) main
+    fmap (reverse . (\(_,x,_) -> x)) $ flip execStateT (1, [], []) main
