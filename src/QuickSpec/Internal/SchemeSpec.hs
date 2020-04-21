@@ -27,6 +27,7 @@ import QuickSpec.Internal.Explore.Conditionals
 import QuickSpec.Internal.Explore hiding (quickSpec)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
+import Control.Monad.Trans.Class (lift)
 import QuickSpec.Internal.Terminal
 import Text.Printf
 import QuickSpec.Internal.SchemeSpec.PropGen
@@ -65,13 +66,13 @@ schemeSpec cfg@Config{..} = do
 
     testProp n current p = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
-      putLine "Testing..."
+      --putLine "Testing..."
       res <- test p
       case res of
         Nothing -> do
-          (_, props, cprops) <- get
-          putLine "Pruning..."
-          let thing = (or $ map (flip simplePrune p) props)
+          (_, props, _) <- get
+          --putLine "Pruning..."
+          let thing = (or $ map (flip simplePrune p) props) -- pruning or testing first?
           if thing
             then return ()
             else pres p
@@ -96,11 +97,18 @@ schemeSpec cfg@Config{..} = do
           putLine "Generating properties for testing..."
           let testps = concatMap testprops expandedTemplates
           putLine "Testing properties ..."
-          mapM_ testpres testps
+          mapM_ (lift . testpres) testps
       let runwithPruning schema = do
-          (n :: Int, props, cprops) <- get
-          put (n, props, []) -- We only want to give the pruner props found from the current schema
-          Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } (runschemespec schema) -- FIXME: This gives a type error
+          (m :: Int, props, _) <- get
+          put (m, props, []) -- We only want to give the pruner props found from the current schema
+          let runschema = runschemespec schema :: Twee.Pruner Constant (StateT
+                                 (Int, [Prop (Term Constant)], [Prop (Term Constant)])
+                                 (QuickCheck.Tester
+                                    TestCase
+                                    (Term Constant)
+                                    (Either (Value Ordy) (Term Constant))
+                                    Terminal)) ()
+          Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size} runschema
 
       mapM_ runwithPruning cfg_schemas
       when (n > 0) $ do
@@ -118,7 +126,7 @@ schemeSpec cfg@Config{..} = do
 
   join $
     fmap withStdioTerminal $
-    generate $ 
+    generate $
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
     --runConditionals constants $
     fmap (reverse . (\(_,x,_) -> x)) $ flip execStateT (1, [], []) main
