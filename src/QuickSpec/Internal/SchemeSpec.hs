@@ -18,6 +18,7 @@ module QuickSpec.Internal.SchemeSpec where
 
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
 import qualified QuickSpec.Internal.Pruning.Twee as Twee
+import QuickSpec.Internal.Pruning
 import QuickSpec.Internal.Haskell
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Prop
@@ -63,19 +64,27 @@ schemeSpec cfg@Config{..} = do
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
-
+    testProp :: Int -> ([[Constant]] -> [Constant]) -> (Prop (Term Constant)) -> Twee.Pruner Constant (StateT
+                                 (Int, [Prop (Term Constant)], [Prop (Term Constant)])
+                                 (QuickCheck.Tester
+                                    TestCase
+                                    (Term Constant)
+                                    (Either (Value Ordy) (Term Constant))
+                                    Terminal)) ()
     testProp n current p = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
       --putLine "Testing..."
       res <- test p
       case res of
         Nothing -> do
-          (_, props, _) <- get
+          (_, props, _) <- lift get
           --putLine "Pruning..."
           let thing = (or $ map (flip simplePrune p) props) -- pruning or testing first?
           if thing
             then return ()
-            else pres p
+            else do
+              _ <- add p
+              lift $ pres p
         _ -> return ()
 
     mainOf n current sofar = do
@@ -97,17 +106,11 @@ schemeSpec cfg@Config{..} = do
           putLine "Generating properties for testing..."
           let testps = concatMap testprops expandedTemplates
           putLine "Testing properties ..."
-          mapM_ (lift . testpres) testps
+          mapM_ testpres testps
       let runwithPruning schema = do
           (m :: Int, props, _) <- get
           put (m, props, []) -- We only want to give the pruner props found from the current schema
-          let runschema = runschemespec schema :: Twee.Pruner Constant (StateT
-                                 (Int, [Prop (Term Constant)], [Prop (Term Constant)])
-                                 (QuickCheck.Tester
-                                    TestCase
-                                    (Term Constant)
-                                    (Either (Value Ordy) (Term Constant))
-                                    Terminal)) ()
+          let runschema = runschemespec schema
           Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size} runschema
 
       mapM_ runwithPruning cfg_schemas
