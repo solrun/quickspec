@@ -64,6 +64,10 @@ schemeSpec cfg@Config{..} = do
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
+    provable ([] :=>: t :=: u) = do
+      t' <- normalise t
+      u' <- normalise u
+      return (t' == u')
     testProp :: Int -> ([[Constant]] -> [Constant]) -> (Prop (Term Constant)) -> Twee.Pruner Constant (StateT
                                  (Int, [Prop (Term Constant)], [Prop (Term Constant)])
                                  (QuickCheck.Tester
@@ -74,18 +78,22 @@ schemeSpec cfg@Config{..} = do
     testProp n current p = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
       --putLine "Testing..."
-      res <- test p
-      case res of
-        Nothing -> do
-          (_, props, _) <- lift get
-          --putLine "Pruning..."
-          let thing = (or $ map (flip simplePrune p) props) -- pruning or testing first?
-          if thing
-            then return ()
-            else do
-              _ <- add p
-              lift $ pres p
-        _ -> return ()
+      prune <- provable p
+      if prune
+        then return ()
+        else do
+          res <- test p
+          case res of
+            Nothing -> do
+              (_, props, _) <- lift get
+              --putLine "Pruning..."
+              let thing = False --(or $ map (flip simplePrune p) props) -- pruning or testing first?
+              if thing
+                then return ()
+                else do
+                  _ <- add p
+                  lift $ pres p
+            _ -> return ()
 
     mainOf n current sofar = do
       unless (null (current cfg_constants)) $ do
@@ -111,7 +119,7 @@ schemeSpec cfg@Config{..} = do
           (m :: Int, props, _) <- get
           put (m, props, []) -- We only want to give the pruner props found from the current schema
           let runschema = runschemespec schema
-          Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size} runschema
+          Twee.run cfg_twee { Twee.cfg_max_term_size = 10} runschema
 
       mapM_ runwithPruning cfg_schemas
       when (n > 0) $ do
