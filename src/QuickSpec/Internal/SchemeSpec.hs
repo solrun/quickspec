@@ -55,43 +55,49 @@ schemeSpec cfg@Config{..} = do
 
     present funs prop = do
       --putLine $ prettyShow prop
-      --norm <- normaliser
       let prop' = prettyDefinition funs (conditionalise prop)
-      --(prettyAC norm (conditionalise prop))
       when (cfg_print_filter prop) $ do
         (n :: Int, props, cprops) <- get
         put (n+1, prop':props, prop':cprops)
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
-    provable ([] :=>: t :=: u) = do
+    provable (([] :=>: t :=: u), True) = do
       t' <- normalise t
       u' <- normalise u
       return (t' == u')
-    testProp :: Int -> ([[Constant]] -> [Constant]) -> (Prop (Term Constant)) -> Twee.Pruner Constant (StateT
+    provable _ = return False
+    testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
                                  (Int, [Prop (Term Constant)], [Prop (Term Constant)])
                                  (QuickCheck.Tester
                                     TestCase
                                     (Term Constant)
                                     (Either (Value Ordy) (Term Constant))
                                     Terminal)) ()
-    testProp n current p = do
+    testProp n current p'@(p,expanded) = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
-      --putLine "Testing..."
-      prune <- provable p
+      --putLine ("Pruner" ++ (prettyShow p))
+      prune <- provable p'
       if prune
-        then return ()
+        then do
+          putLine "pruned"
+          return ()
         else do
+          --putLine ("Testing...")
           res <- test p
           case res of
             Nothing -> do
               (_, props, _) <- lift get
               --putLine "Pruning..."
-              let thing = False --(or $ map (flip simplePrune p) props) -- pruning or testing first?
+              let thing = (or $ map (flip simplePrune p) props)
               if thing
-                then return ()
+                then do
+                  --putLine "pruned"
+                  return ()
                 else do
+                  --putLine "not pruned"
                   _ <- add p
+                  --putLine (show expanded)
                   lift $ pres p
             _ -> return ()
 
@@ -104,24 +110,25 @@ schemeSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let testpres prop = testProp n current prop
-      let testprops t = schemaProps t (constantsOf sofar) (constantsOf current)
+      let testprops (t,b) = zip (schemaProps t (constantsOf sofar) (constantsOf current)) (repeat b)
       let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
       let runschemespec schema = when (n > 0) $ do
           putLine ("Searching for " ++ fst schema ++ " properties...")
-          putLine ("Generating expanded templates...")
+          --putLine ("Generating expanded templates...")
           let expandedTemplates = expandTemplate maxArity $ snd schema
-          putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
-          putLine "Generating properties for testing..."
+          --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
+          --putLine "Generating properties for testing..."
           let testps = concatMap testprops expandedTemplates
-          putLine "Testing properties ..."
+          --putLine "Testing properties ..."
           mapM_ testpres testps
       let runwithPruning schema = do
           (m :: Int, props, _) <- get
-          put (m, props, []) -- We only want to give the pruner props found from the current schema
+          put (m, props, []) -- Set props found by current template to []
           let runschema = runschemespec schema
           Twee.run cfg_twee { Twee.cfg_max_term_size = 10} runschema
 
-      mapM_ runwithPruning cfg_schemas
+      Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 0} $ mapM_ runschemespec cfg_schemas
+      -- mapM_ runwithPruning cfg_schemas
       when (n > 0) $ do
         putLine ""
 
