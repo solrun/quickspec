@@ -30,7 +30,7 @@ import Control.Monad.Trans.Class
 import qualified Twee.Base as Twee
 import Control.Monad
 import qualified Data.DList as DList
-
+import Data.Maybe(fromJust)
 data Polymorphic testcase result fun norm =
   Polymorphic {
     pm_schemas :: Schemas testcase result (PolyFun fun) norm,
@@ -148,11 +148,14 @@ instance MonadTester testcase (Term fun) m =>
 -- e.g.    map (f :: a -> a) (xs++ys) = map f xs++map f ys
 -- becomes map (f :: a -> b) (xs++ys) = map f xs++map f ys.
 regeneralise :: (PrettyTerm fun, Typed fun, Apply (Term fun)) => Prop (Term fun) -> Prop (Term fun)
-regeneralise =
+regeneralise = fromJust . mayberegeneralise
+
+mayberegeneralise :: (PrettyTerm fun, Typed fun, Apply (Term fun)) => Prop (Term fun) -> Maybe (Prop (Term fun))
+mayberegeneralise =
   -- First replace each type variable occurrence with a fresh
   -- type variable (generalise), then unify type variables
   -- where necessary to preserve well-typedness (restrict).
-  restrict . unPoly . generalise
+  mayberestrict . unPoly . generalise
   where
     generalise (lhs :=>: rhs) =
       polyApply (:=>:) (polyList (map genLit lhs)) (genLit rhs)
@@ -184,21 +187,22 @@ regeneralise =
           Twee.app f (aux n ts) `mappend`
           aux (n+Twee.lenList ts) us
 
-    restrict prop = case Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs)) of
-      Just sub -> typeSubst sub prop
-      Nothing -> error $ "Couldn't unify " ++ (prettyShow cs)
-      where
-        cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs]
-          ++ concatMap litCs (lhs prop)
-          ++ litCs (rhs prop)
-          -- forces all occurrences of a hole to have the same type, we may want to be less restrictive
-          ++ [(hole_ty x, hole_ty y) | x:xs <- hs, y <- xs]
-        -- Two variables that were equal before generalisation must have the
-        -- same type afterwards
-        vs = partitionBy skel (concatMap vars (terms prop))
-        hs = partitionBy mskel (concatMap mvars (terms prop))
-        skel (V ty x) = V (oneTypeVar ty) x
-        mskel (MV x ty) = MV x (oneTypeVar ty)
+mayberestrict :: (PrettyTerm fun, Typed fun, Apply (Term fun)) => Prop (Term fun) -> Maybe (Prop (Term fun))
+mayberestrict prop = case Twee.unifyList (Twee.buildList (map fst cs)) (Twee.buildList (map snd cs)) of
+  Just sub -> Just $ typeSubst sub prop
+  Nothing  -> Nothing -- error $ "Couldn't unify " ++ (prettyShow cs)
+  where
+    cs = [(var_ty x, var_ty y) | x:xs <- vs, y <- xs]
+      ++ concatMap litCs (lhs prop)
+      ++ litCs (rhs prop)
+      -- forces all occurrences of a hole to have the same type, we may want to be less restrictive
+      ++ [(hole_ty x, hole_ty y) | x:xs <- hs, y <- xs]
+    -- Two variables that were equal before generalisation must have the
+    -- same type afterwards
+    vs = partitionBy skel (concatMap vars (terms prop))
+    hs = partitionBy mskel (concatMap mvars (terms prop))
+    skel (V ty x) = V (oneTypeVar ty) x
+    mskel (MV x ty) = MV x (oneTypeVar ty)
     litCs (t :=: u) = [(typ t, typ u)]
 
 typeInstancesList :: [Type] -> [Type] -> [Twee.Var -> Type]

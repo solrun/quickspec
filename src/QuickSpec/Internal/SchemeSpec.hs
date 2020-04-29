@@ -80,7 +80,7 @@ schemeSpec cfg@Config{..} = do
       prune <- provable p'
       if prune
         then do
-          putLine "pruned"
+          --putLine "pruned"
           return ()
         else do
           --putLine ("Testing...")
@@ -110,7 +110,7 @@ schemeSpec cfg@Config{..} = do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
       let testpres prop = testProp n current prop
-      let testprops (t,b) = zip (schemaProps t (constantsOf sofar) (constantsOf current)) (repeat b)
+      let testprops (t,b) = zip (templateProps t (constantsOf sofar) (constantsOf current)) (repeat b)
       let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
       let runschemespec schema = when (n > 0) $ do
           putLine ("Searching for " ++ fst schema ++ " properties...")
