@@ -34,7 +34,7 @@ import Text.Printf
 import QuickSpec.Internal.SchemeSpec.PropGen
 import QuickSpec.Internal.Testing
 import QuickSpec.Internal.SchemeSpec.Matching
-
+import QuickSpec.Internal.Explore.Polymorphic
 import Debug.Trace
 
 
@@ -63,8 +63,8 @@ schemeSpec cfg@Config{..} = do
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
     provable (([] :=>: t :=: u), True) = do
-      t' <- normalise t
-      u' <- normalise u
+      t' <- normalise (oneTypeVar t)
+      u' <- normalise (oneTypeVar u)
       return (t' == u')
     provable _ = return False
     testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
@@ -96,9 +96,13 @@ schemeSpec cfg@Config{..} = do
                   return ()
                 else do
                   --putLine "not pruned"
-                  _ <- add p
+                  _ <- addPoly p
                   --putLine (show expanded)
                   lift $ pres p
+                  where
+                    addPoly aprop = do
+                      let insts = typeInstances univ (canonicalise (regeneralise aprop))
+                      mapM_ add insts
             _ -> return ()
 
     mainOf n current sofar = do
