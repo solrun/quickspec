@@ -55,8 +55,8 @@ findFillings s (allcs, currcs) = findFillings' currcs $ allFillings (allHoles s)
         allFillings holes cons = map (allFeasibleFillings cons) holes
         allFeasibleFillings fs h = (h, filter (feasibleFill h) fs)
         feasibleFill :: MetaVar -> Constant -> Bool
-        feasibleFill mv c = (isJust $ matchType (hole_ty mv) (con_type c))
-                         && (typeArity (hole_ty mv) == typeArity (con_type c))
+        feasibleFill mv c = (isJust $ polyMgu (poly $ hole_ty mv) (poly $ con_type c))
+                         -- && (typeArity (hole_ty mv) == typeArity (con_type c))
         containsAny xs ys = or $ map (flip elem ys) xs
 
 allHoles :: (Term Constant, Term Constant) -> [MetaVar]
