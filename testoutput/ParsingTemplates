@@ -1,0 +1,60 @@
+== Functions ==
+return :: a -> ReadP a
+    () :: ()
+  void :: ReadP a -> ReadP ()
+ (>>=) :: ReadP a -> (a -> ReadP b) -> ReadP b
+ (>=>) :: (a -> ReadP b) -> (b -> ReadP c) -> a -> ReadP c
+
+== Functions ==
+  get :: ReadP Char
+ peek :: ReadP Char
+(+++) :: ReadP a -> ReadP a -> ReadP a
+(<++) :: ReadP a -> ReadP a -> ReadP a
+pfail :: ReadP a
+  eof :: ReadP ()
+
+WARNING: The following types have no 'Arbitrary' instance declared.
+You will not get any variables of the following types:
+  ReadP Int -> Int
+  ReadP () -> Int
+  ReadP Char -> Int
+  ReadP Int -> ReadP Int
+  ReadP Int -> ReadP ()
+  ReadP () -> ReadP Int
+  ReadP () -> ReadP ()
+  ReadP Char -> ReadP Int
+  ReadP Char -> ReadP ()
+
+== Laws ==
+Searching for id properties...
+Searching for fix-point properties...
+  1. void pfail = pfail         
+  2. void eof = eof
+Searching for cancel properties...
+  3. (+++) (void x) = (+++) x
+  4. (<++) (void x) = (<++) x
+  5. x +++ void y = x +++ z
+  6. x <++ void y = x <++ z
+  7. void (return (x +++ y)) = void (return y)
+  8. void (return (x <++ y)) = void (return y)
+Searching for op-id-elem properties...
+  9. x +++ pfail = x
+ 10. x <++ pfail = x
+ 11. void (x +++ pfail) = x
+Searching for commutative properties...
+ 12. x +++ y = y +++ x
+Searching for op-commute properties...
+ 13. void (x +++ y) = z +++ void y
+ 14. void (x <++ y) = z <++ void y
+ 15. x +++ (y +++ z) = y +++ (x +++ z)
+Searching for 2-distributive properties...
+ 16. void (x +++ y) = void x +++ void y
+ 17. void (x <++ y) = void x <++ void y
+ 18. x <++ (y <++ z) = (x <++ y) <++ (x <++ z)
+Searching for analogy-distributive properties...
+Searching for associative-3 properties...
+ 19. (x +++ y) +++ z = x +++ (y +++ z)
+ 20. (x <++ y) <++ z = x <++ (y <++ z)
+ 21. x <++ ((x <++ (y +++ z)) +++ w) = x <++ (y +++ (x <++ (z +++ w)))
+ 22. x <++ ((x <++ (y <++ z)) <++ w) = x <++ (y <++ (x <++ (z <++ w)))
+

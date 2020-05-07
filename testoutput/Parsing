@@ -1,0 +1,130 @@
+== Functions ==
+return :: a -> ReadP a
+    () :: ()
+  void :: ReadP a -> ReadP ()
+ (>>=) :: ReadP a -> (a -> ReadP b) -> ReadP b
+ (>=>) :: (a -> ReadP b) -> (b -> ReadP c) -> a -> ReadP c
+
+== Functions ==
+  get :: ReadP Char
+ peek :: ReadP Char
+(+++) :: ReadP a -> ReadP a -> ReadP a
+(<++) :: ReadP a -> ReadP a -> ReadP a
+pfail :: ReadP a
+  eof :: ReadP ()
+
+WARNING: The following types have no 'Arbitrary' instance declared.
+You will not get any variables of the following types:
+  ReadP Int -> Int
+  ReadP () -> Int
+  ReadP Char -> Int
+  ReadP Int -> ReadP Int
+  ReadP Int -> ReadP ()
+  ReadP () -> ReadP Int
+  ReadP () -> ReadP ()
+  ReadP Char -> ReadP Int
+  ReadP Char -> ReadP ()
+
+== Laws ==
+  1. void pfail = pfail
+  2. (+++) pfail = void
+  3. (<++) pfail = (+++) pfail
+  4. x +++ y = y +++ x
+  5. x <++ x = x
+  6. x +++ pfail = x
+  7. x <++ pfail = x
+  8. pfail >>= f = pfail
+  9. get <++ peek = get
+ 10. peek <++ get = peek
+ 11. return x <++ y = return x
+ 12. eof <++ return x = return x
+ 13. eof +++ void peek = return x
+ 14. eof <++ void get = eof +++ void get
+ 15. eof <++ void peek = return x
+ 16. void get <++ eof = eof +++ void get
+ 17. void peek <++ eof = return x
+ 18. x +++ (y +++ z) = y +++ (x +++ z)
+ 19. x <++ (x +++ y) = x <++ y
+ 20. x <++ (x <++ y) = x <++ y
+ 21. x <++ (y <++ x) = x <++ y
+ 22. x <++ (x >>= f) = x
+ 23. (x +++ x) <++ y = x +++ (x <++ y)
+ 24. (x +++ y) <++ x = x +++ y
+ 25. (x <++ y) <++ z = x <++ (y <++ z)
+ 26. void x +++ void y = void (x +++ y)
+ 27. void x <++ void y = void (x <++ y)
+ 28. (eof >>= f) >>= g = (eof >>= g) >>= f
+ 29. get +++ (eof >>= f) = get <++ f x
+ 30. peek +++ (get <++ x) = get +++ (peek <++ x)
+ 31. peek +++ (eof >>= f) = peek <++ f x
+ 32. (get +++ peek) <++ x = get +++ (peek <++ x)
+ 33. (eof >>= f) <++ get = get <++ f x
+ 34. (eof >>= f) <++ peek = peek <++ f x
+ 35. void x <++ (x >>= f) = void x
+ 36. void get +++ (eof >>= f) = void get <++ f x
+ 37. void peek +++ (eof >>= f) = void peek <++ f x
+ 38. (eof >>= f) <++ void get = void get <++ f x
+ 39. (eof >>= f) <++ void peek = void peek <++ f x
+ 40. void get <++ (eof +++ eof) = void get +++ (eof +++ eof)
+ 41. void peek <++ (eof +++ eof) = eof +++ return x
+ 42. x <++ (void >=> f) x = x
+ 43. eof +++ (void >=> f) peek = eof <++ f x
+ 44. eof <++ (void >=> f) get = eof +++ (void >=> f) get
+ 45. (void >=> f) get <++ eof = eof +++ (void >=> f) get
+ 46. (void >=> f) peek <++ eof = eof <++ f x
+ 47. f x +++ (y >>= f) = ((+++) y >=> f) (return x)
+ 48. f x <++ (eof >>= f) = f x
+ 49. (eof >>= f) <++ f x = f x
+ 50. x <++ void (x >>= f) = x
+ 51. void ((eof >>= f) >>= g) = (void >=> f) (eof >>= g)
+ 52. eof <++ (x +++ return y) = void peek +++ (eof <++ x)
+ 53. eof +++ (x <++ void get) = (x +++ eof) <++ void get
+ 54. eof +++ (x <++ void peek) = (x +++ eof) <++ return y
+ 55. eof +++ (void get <++ x) = void get <++ (x +++ eof)
+ 56. eof +++ (void peek <++ x) = void peek <++ (x +++ eof)
+ 57. eof <++ (x +++ void get) = void get +++ (eof <++ x)
+ 58. (x +++ void get) <++ eof = void get +++ (x <++ eof)
+ 59. (x +++ void peek) <++ eof = void peek +++ (x <++ eof)
+ 60. (f x <++ eof) >>= f = (f >=> f) x
+ 61. (x >>= f) +++ (y >>= f) = (x +++ y) >>= f
+ 62. (x +++ x) <++ (y +++ z) = (x <++ y) +++ (x <++ z)
+ 63. (x >>= f) <++ (eof >>= f) = (x <++ eof) >>= f
+ 64. (eof >>= f) <++ (x >>= f) = (eof <++ x) >>= f
+ 65. (x +++ y) <++ (eof <++ z) = (x +++ y) <++ (z <++ eof)
+ 66. (get <++ x) +++ (eof >>= f) = get <++ (x +++ f y)
+ 67. (peek <++ x) +++ (get <++ y) = (get <++ x) +++ (peek <++ y)
+ 68. (peek <++ x) +++ (eof >>= f) = peek <++ (x +++ f y)
+ 69. (get +++ peek) <++ (x +++ y) = (get <++ x) +++ (peek <++ y)
+ 70. (eof >>= f) <++ (get +++ get) = (get +++ get) <++ f x
+ 71. (eof >>= f) <++ (get +++ peek) = (get +++ peek) <++ f x
+ 72. (eof >>= f) <++ (peek +++ peek) = (peek +++ peek) <++ f x
+ 73. void get <++ (void >=> f) peek = void get
+ 74. void peek <++ (void >=> f) get = void peek
+ 75. x <++ (y +++ (x <++ z)) = x <++ (y +++ z)
+ 76. x <++ ((x <++ y) >>= f) = x <++ (y >>= f)
+ 77. (x +++ (x +++ y)) <++ z = x +++ ((x +++ y) <++ z)
+ 78. (x +++ (y <++ x)) <++ z = x +++ (y <++ (x <++ z))
+ 79. (x +++ (y <++ z)) <++ z = x +++ (y <++ z)
+ 80. ((x >>= f) <++ x) >>= f = (x >>= f) >>= f
+ 81. get +++ (x <++ (eof >>= f)) = (x +++ get) <++ f y
+ 82. get +++ ((eof >>= f) <++ x) = (eof >>= f) <++ (x +++ get)
+ 83. peek +++ (x <++ (eof >>= f)) = (x +++ peek) <++ f y
+ 84. peek +++ ((eof >>= f) <++ x) = (eof >>= f) <++ (x +++ peek)
+ 85. (x +++ (y <++ get)) <++ peek = x +++ (y <++ get)
+ 86. (x +++ (y <++ peek)) <++ get = x +++ (y <++ peek)
+ 87. (x +++ (eof >>= f)) <++ get = (x <++ get) +++ (eof >>= f)
+ 88. (x +++ (eof >>= f)) <++ peek = (x <++ peek) +++ (eof >>= f)
+ 89. (get +++ (x <++ peek)) <++ y = get +++ (x <++ (peek <++ y))
+ 90. (peek +++ (x <++ get)) <++ y = peek +++ (x <++ (get <++ y))
+ 91. void (eof >>= f) +++ void get = void get <++ void (f x)
+ 92. void (eof >>= f) +++ void peek = void peek <++ void (f x)
+ 93. void get +++ (void peek <++ x) = void (get +++ peek) <++ x
+ 94. void peek +++ (void get <++ x) = void (get +++ peek) <++ x
+ 95. void (eof >>= f) <++ void get = void get <++ void (f x)
+ 96. void (eof >>= f) <++ void peek = void peek <++ void (f x)
+ 97. (x +++ void get) <++ void peek = x +++ void get
+ 98. (x +++ void peek) <++ void get = x +++ void peek
+ 99. void ((void >=> f) (eof >>= g)) = void ((void >=> g) (eof >>= f))
+100. eof +++ void ((void >=> f) peek) = eof <++ void (f x)
+101. void (void (eof >>= f) >>= g) = void ((void >=> f) (eof >>= g))
+
