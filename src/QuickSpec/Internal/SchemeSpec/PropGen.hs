@@ -143,7 +143,7 @@ partialApp maxArity p = nub [foldl partialExpand p c | c <- combos]
 
 -- Replace ?F with ?F X1 X2 ...
 partialExpand :: (Prop (Term Constant), Bool) -> (Int,MetaVar) -> (Prop (Term Constant), Bool)
-partialExpand (p,b) (k,h) | k <= typeArity (hole_ty h) = (p, b)
+partialExpand (p,b) (k,h) | k <= typeArity (hole_ty h) || hole_id h `elem`  ["X","Y","Z"] = (p, b)
 partialExpand (p,_) (k,h) | otherwise = (sprop (partialExpand' hname vnums lh,
                                            partialExpand' hname vnums rh), True)
   where (lh,rh) = sides p
@@ -165,7 +165,8 @@ nestApp p = (p, False) : [(appExpand p f, True) | f <- nub $ mvars p]
 
 -- Replace ?F with ?F1 applied to ?F2
 appExpand :: Prop (Term Constant) -> MetaVar -> Prop (Term Constant)
-appExpand p m =  sprop (appExpand' h lh, appExpand' h rh)
+appExpand p m | hole_id m `elem` ["X","Y"] = p
+appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
   where h = hole_id m
         (lh,rh) = sides p
         appExpand' mv (x@(Hole mv') :@: ts) =

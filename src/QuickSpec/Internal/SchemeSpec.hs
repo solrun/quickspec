@@ -57,8 +57,8 @@ schemeSpec cfg@Config{..} = do
       --putLine $ prettyShow prop
       let prop' = prettyDefinition funs (conditionalise prop)
       when (cfg_print_filter prop) $ do
-        (n :: Int, props, cprops) <- get
-        put (n+1, prop':props, prop':cprops)
+        (n :: Int, props) <- get
+        put (n+1, prop':props)
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
@@ -67,13 +67,13 @@ schemeSpec cfg@Config{..} = do
       u' <- normalise (oneTypeVar u)
       return (t' == u')
     provable _ = return False
-    testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
-                                 (Int, [Prop (Term Constant)], [Prop (Term Constant)])
-                                 (QuickCheck.Tester
-                                    TestCase
-                                    (Term Constant)
-                                    (Either (Value Ordy) (Term Constant))
-                                    Terminal)) ()
+   -- testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
+   --                              (Int, [Prop (Term Constant)])
+   --                              (QuickCheck.Tester
+   --                                 TestCase
+   --                                 (Term Constant)
+   --                                 (Either (Value Ordy) (Term Constant))
+   --                                 Terminal)) ()
     testProp n current p'@(p,expanded) = do
       let pres = if n == 0 then \_ -> return () else present (constantsOf current)
       --putLine ("Pruner" ++ (prettyShow p))
@@ -87,7 +87,7 @@ schemeSpec cfg@Config{..} = do
           res <- test p
           case res of
             Nothing -> do
-              (_, props, _) <- lift get
+              (_, props) <- lift get
               --putLine "Pruning..."
               let thing = (or $ map (flip simplePrune p) props)
               if thing
@@ -126,19 +126,21 @@ schemeSpec cfg@Config{..} = do
           --putLine "Testing properties ..."
           mapM_ testpres testps
       let runwithPruning schema = do
-          (m :: Int, props, _) <- get
-          put (m, props, []) -- Set props found by current template to []
+          (m :: Int, props) <- get
+          put (m, props) -- Set props found by current template to []
           let runschema = runschemespec schema
           Twee.run cfg_twee { Twee.cfg_max_term_size = 10} runschema
 
-      Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 0} $ mapM_ runschemespec cfg_schemas
+      mapM_ runschemespec cfg_schemas
       -- mapM_ runwithPruning cfg_schemas
       when (n > 0) $ do
         putLine ""
 
-    main = do
-      (n :: Int, props, _) <- get
-      put (n, cfg_background ++ props, [])
+    main = Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 0} $ do
+      (n :: Int, props) <- lift get
+      lift $ put (n, cfg_background ++ props)
+      forM_ cfg_background $ \prop -> do
+        add prop
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
@@ -151,4 +153,4 @@ schemeSpec cfg@Config{..} = do
     generate $
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
     --runConditionals constants $
-    fmap (reverse . (\(_,x,_) -> x)) $ flip execStateT (1, [], []) main
+    fmap (reverse . snd) $ flip execStateT (1, []) main
