@@ -1,0 +1,92 @@
+== Functions ==
+  0 :: Int
+  1 :: Int
+(+) :: Int -> Int -> Int
+
+== Functions ==
+reverse :: [a] -> [a]
+   (++) :: [a] -> [a] -> [a]
+     [] :: [a]
+    map :: (a -> b) -> [a] -> [b]
+ length :: [a] -> Int
+ concat :: [[a]] -> [a]
+
+== Laws ==
+  1. reverse (reverse xs) = xs
+  2. reverse [] = []
+  3. map f [] = []
+  4. concat (reverse []) = []
+  5. reverse (concat []) = []
+  6. concat (concat []) = []
+  7. concat (map f []) = []
+  8. map f (concat []) = []
+  9. reverse (concat []) = concat []
+ 10. length (reverse xs) = length xs
+ 11. length (map f xs) = length xs
+ 12. length (concat (reverse xss)) = length (concat xss)
+ 13. length (xs ++ reverse ys) = length (xs ++ ys)
+ 14. length (xs ++ map f ys) = length (xs ++ ys)
+ 15. xs ++ [] = xs
+ 16. xs ++ reverse [] = xs
+ 17. x + length [] = x
+ 18. xs ++ concat [] = xs
+ 19. xs ++ map f [] = xs
+ 20. length (xs ++ ys) = length (ys ++ xs)
+ 21. reverse (map f xs) = map f (reverse xs)
+ 22. reverse (reverse (xs ++ ys)) = xs ++ reverse (reverse ys)
+ 23. map f (xs ++ ys) = map f xs ++ map f ys
+ 24. reverse (reverse (xs ++ ys)) = reverse (reverse xs) ++ reverse (reverse ys)
+ 25. concat (concat (xsss ++ ysss)) = concat (concat xsss) ++ concat (concat ysss)
+ 26. concat (map f (xss ++ yss)) = concat (map f xss) ++ concat (map f yss)
+ 27. map f (concat (xss ++ yss)) = map f (concat xss) ++ map f (concat yss)
+ 28. length xs + length ys = length (xs ++ ys)
+ 29. concat xss ++ concat yss = concat (xss ++ yss)
+ 30. length (reverse xs) + length (reverse ys) = length (reverse (xs ++ ys))
+ 31. length (concat xss) + length (concat yss) = length (concat (xss ++ yss))
+ 32. length xs + length ys = length (reverse (xs ++ ys))
+ 33. length xs + length ys = length (map f (xs ++ ys))
+ 34. (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
+
+Thoughts:
+Annoying that we can't find concat [] = []
+(4,5,6,7,8,9)
+13 and 14 boring?
+why is 16 not pruned?
+and 19?
+22?
+24?
+30?
+32?
+
+
+== Laws ==
+Searching for id properties...
+  1. reverse (reverse xs) = xs
+Searching for fix-point properties...
+  2. reverse [] = []
+  3. map f [] = []
+  4. concat (reverse []) = []
+  5. concat (concat []) = []
+Searching for cancel properties...
+  6. length (reverse xs) = length xs
+  7. length (map f xs) = length xs
+  8. length (concat (reverse xss)) = length (concat xss)
+  9. length (xs ++ reverse ys) = length (xs ++ ys)
+ 10. length (xs ++ map f ys) = length (xs ++ ys)
+Searching for op-id-elem properties...
+ 11. xs ++ [] = xs
+ 12. x + length [] = x
+Searching for commutative properties...
+ 13. length (xs ++ ys) = length (ys ++ xs)
+Searching for op-commute properties...
+ 14. reverse (map f xs) = map f (reverse xs)
+Searching for 2-distributive properties...
+ 15. map f (xs ++ ys) = map f xs ++ map f ys
+ 16. concat (concat (xsss ++ ysss)) = concat (concat xsss) ++ concat (concat ysss)
+ 17. concat (map f (xss ++ yss)) = concat (map f xss) ++ concat (map f yss)
+ 18. map f (concat (xss ++ yss)) = map f (concat xss) ++ map f (concat yss)
+Searching for analogy-distributive properties...
+ 19. length xs + length ys = length (xs ++ ys)
+ 20. concat xss ++ concat yss = concat (xss ++ yss)
+Searching for associative-3 properties...
+ 21. (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
