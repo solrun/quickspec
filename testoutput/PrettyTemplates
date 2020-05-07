@@ -1,0 +1,33 @@
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+text :: [Char] -> Doc
+nest :: Int -> Doc -> Doc
+(<>) :: Doc -> Doc -> Doc
+($$) :: Doc -> Doc -> Doc
+
+== Laws ==
+Searching for id properties...
+Searching for fix-point properties...
+Searching for cancel properties...
+  1. x <> nest y z = x <> z
+Searching for op-id-elem properties...
+  2. x <> text [] = x
+Searching for commutative properties...
+  3. nest (x + y) = nest (y + x)
+Searching for op-commute properties...
+  4. nest x (nest y z) = nest y (nest x z)
+Searching for 2-distributive properties...
+  5. nest x (y <> z) = nest x y <> nest x z
+  6. nest x (y $$ z) = nest x y $$ nest x z
+Searching for analogy-distributive properties...
+  7. text xs <> text ys = text (xs ++ ys)
+Searching for associative-3 properties...
+  8. (x <> y) <> z = x <> (y <> z)
+  9. (x $$ y) $$ z = x $$ (y $$ z)
+
