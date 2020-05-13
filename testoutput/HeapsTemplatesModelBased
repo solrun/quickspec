@@ -1,0 +1,54 @@
+== Functions ==
+      (||) :: Bool -> Bool -> Bool
+      (&&) :: Bool -> Bool -> Bool
+       not :: Bool -> Bool
+      True :: Bool
+     False :: Bool
+         0 :: Int
+         1 :: Int
+       (+) :: Int -> Int -> Int
+        [] :: [a]
+       (:) :: a -> [a] -> [a]
+      (++) :: [a] -> [a] -> [a]
+      True :: Bool
+     False :: Bool
+      head :: [a] -> a
+      tail :: [a] -> [a]
+    toList :: Heap OrdA -> [OrdA]
+      sort :: [OrdA] -> [OrdA]
+insertList :: OrdA -> [OrdA] -> [OrdA]
+  nullList :: [OrdA] -> Bool
+deleteList :: OrdA -> [OrdA] -> [OrdA]
+mergeLists :: [OrdA] -> [OrdA] -> [OrdA]
+
+== Functions ==
+      nil :: Heap OrdA
+   insert :: OrdA -> Heap OrdA -> Heap OrdA
+  findMin :: Heap OrdA -> OrdA
+deleteMin :: Heap OrdA -> Heap OrdA
+    merge :: Heap OrdA -> Heap OrdA -> Heap OrdA
+     null :: Heap OrdA -> Bool
+ fromList :: [OrdA] -> Heap OrdA
+
+WARNING: The following types have no 'Arbitrary' instance declared.
+You will not get any variables of the following types:
+  Heap Int
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  Heap Int
+
+== Laws ==
+Searching for id properties...
+  1. fromList (toList h) = h
+Searching for model-based properties...
+  2. sort (toList h) = toList (fromList (toList h))
+Searching for model-based-2 properties...
+  3. insertList x (toList h) = toList (insert x h)
+  4. sort (x : toList h) = toList (insert x h)
+Searching for model-based-0 properties...
+  5. null h = nullList (toList h)
+Searching for model-based-distributive properties...
+  6. mergeLists (toList h) (toList h1) = toList (merge h h1)
+  7. sort (toList h ++ toList h1) = toList (merge h h1)
+

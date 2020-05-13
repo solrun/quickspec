@@ -1,0 +1,105 @@
+== Functions ==
+      (||) :: Bool -> Bool -> Bool
+      (&&) :: Bool -> Bool -> Bool
+       not :: Bool -> Bool
+      True :: Bool
+     False :: Bool
+         0 :: Int
+         1 :: Int
+       (+) :: Int -> Int -> Int
+        [] :: [a]
+       (:) :: a -> [a] -> [a]
+      (++) :: [a] -> [a] -> [a]
+      True :: Bool
+     False :: Bool
+      head :: [a] -> a
+      tail :: [a] -> [a]
+    toList :: Heap OrdA -> [OrdA]
+      sort :: [OrdA] -> [OrdA]
+insertList :: OrdA -> [OrdA] -> [OrdA]
+  nullList :: [OrdA] -> Bool
+deleteList :: OrdA -> [OrdA] -> [OrdA]
+mergeLists :: [OrdA] -> [OrdA] -> [OrdA]
+
+== Functions ==
+      nil :: Heap OrdA
+   insert :: OrdA -> Heap OrdA -> Heap OrdA
+  findMin :: Heap OrdA -> OrdA
+deleteMin :: Heap OrdA -> Heap OrdA
+    merge :: Heap OrdA -> Heap OrdA -> Heap OrdA
+     null :: Heap OrdA -> Bool
+ fromList :: [OrdA] -> Heap OrdA
+
+WARNING: The following types have no 'Arbitrary' instance declared.
+You will not get any variables of the following types:
+  Heap Int
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  Heap Int
+
+== Laws ==
+Searching for id properties...
+  1. fromList (toList h) = h
+Searching for fix-point properties...
+  2. toList (fromList []) = []
+  3. deleteMin (insert x nil) = nil
+Searching for cancel properties...
+  4. fromList (sort xs) = fromList xs
+  5. fromList (x : sort xs) = fromList (x : xs)
+  6. fromList (insertList x (sort xs)) = fromList (insertList x xs)
+  7. fromList (deleteList x (sort xs)) = fromList (deleteList x xs)
+  8. null (insert x (insert y h)) = null (insert x h)
+  9. sort (toList (fromList xs)) = sort xs
+ 10. nullList (toList (fromList xs)) = nullList xs
+ 11. null (deleteMin (insert x h)) = null h
+ 12. fromList (tail (x : xs)) = fromList xs
+Searching for left-id-elem properties...
+ 13. merge nil h = h
+ 14. tail (nil : hs) = hs
+ 15. tail (findMin h : xs) = xs
+ 16. tail (deleteMin h : hs) = hs
+ 17. tail (null h : xs) = xs
+ 18. tail (fromList xs : hs) = hs
+ 19. tail (insert x h : hs) = hs
+ 20. null nil && x = x
+ 21. toList nil ++ xs = xs
+ 22. mergeLists (toList nil) xs = xs
+ 23. merge (fromList []) h = h
+ 24. null (insert x h) || y = y
+Searching for right-id-elem properties...
+ 25. merge h nil = h
+ 26. findMin (insert x nil) = x
+ 27. x && null nil = x
+ 28. xs ++ toList nil = xs
+ 29. mergeLists xs (toList nil) = xs
+ 30. merge h (fromList []) = h
+ 31. x || null (insert y h) = x
+Searching for commutative properties...
+ 32. merge h h1 = merge h1 h
+ 33. fromList (xs ++ ys) = fromList (ys ++ xs)
+ 34. fromList (mergeLists xs ys) = fromList (mergeLists ys xs)
+Searching for op-commute properties...
+ 35. insert x (insert y h) = insert y (insert x h)
+ 36. toList (fromList (sort xs)) = sort (toList (fromList xs))
+ 37. toList (fromList (insertList x xs)) = insertList x (toList (fromList xs))
+ 38. toList (fromList (deleteList x xs)) = deleteList x (toList (fromList xs))
+Searching for 2-distributive properties...
+ 39. toList (fromList (mergeLists xs ys)) = mergeLists (toList (fromList xs)) (toList (fromList ys))
+Searching for analogy-distributive properties...
+ 40. null h && null h1 = null (merge h h1)
+ 41. mergeLists (toList h) (toList h1) = toList (merge h h1)
+ 42. merge (fromList xs) (fromList ys) = fromList (xs ++ ys)
+ 43. merge (fromList xs) (fromList ys) = fromList (mergeLists xs ys)
+ 44. sort (toList h ++ toList h1) = toList (merge h h1)
+ 45. sort (mergeLists (toList h) (toList h1)) = toList (merge h h1)
+ 46. not (null h) || not (null h1) = not (null (merge h h1))
+ 47. nullList (toList h) && nullList (toList h1) = nullList (toList (merge h h1))
+ 48. merge (fromList (toList h)) (fromList (toList h1)) = fromList (toList (merge h h1))
+ 49. merge (fromList (sort xs)) (fromList (sort ys)) = fromList (sort (xs ++ ys))
+ 50. null (insert x h) || null (insert x h1) = null (insert x (merge h h1))
+ 51. null (insert x h) && null (insert x h1) = null (insert x (merge h h1))
+Searching for associative-3 properties...
+ 52. merge (merge h h1) h2 = merge h (merge h1 h2)
+ 53. insert x (merge (insert x (merge h h1)) h2) = insert x (merge h (insert x (merge h1 h2)))
+
