@@ -7,7 +7,7 @@ import QuickSpec.Internal.Utils
 import qualified QuickSpec.Internal.Explore.Polymorphic as Polymorphic
 
 import Data.Maybe(isJust,catMaybes)
-import Data.List(nub, subsequences, find)
+import Data.List(nub, subsequences, find, isSuffixOf)
 import qualified Data.Map.Strict as Map
 import Control.Monad(liftM)
 
@@ -42,36 +42,43 @@ tryFill (t1,t2) m = case canFill m Map.empty t1 of
           where pt1 = poly $ typ t1'
                 pt2 = poly $ typ t2'
 
--- Takes template and list of functions (divided into functions in current exploration scope and background functions),
--- returns a list of maps with hole names as keys and possible fillings for those holes as values
-findFillings :: (Term Constant, Term Constant) ->([Constant], [Constant])-> [Map.Map String Constant]
+-- Takes template and list of functions
+-- (divided into functions in current exploration scope and background functions),
+-- returns a list of maps with hole names as keys
+-- and possible fillings for those holes as values
+findFillings :: (Term Constant, Term Constant) -> ([Constant], [Constant]) -> [Map.Map String Constant]
 findFillings s (allcs, currcs) = findFillings' currcs $ allFillings (allHoles s) allcs
-  where findFillings' :: [Constant] -> [(MetaVar, [Constant])] -> [Map.Map String Constant]
+  where findFillings' :: [Constant] -> [(String, [Constant])] -> [Map.Map String Constant]
         findFillings' curr l = map Map.fromList $
           filter (containsAny curr . map snd) (crossProd $ map fillings l)
           -- filter out those that have nothing from currcs
-        fillings (mv, cons) = [(hole_id mv, c)| c <- cons]
-        allFillings :: [MetaVar] -> [Constant] -> [(MetaVar, [Constant])]
+        fillings (n, cons) = [(n, c)| c <- cons]
+        allFillings :: [(String,[Type])] -> [Constant] -> [(String, [Constant])]
         allFillings holes cons = map (allFeasibleFillings cons) holes
-        allFeasibleFillings fs h = (h, filter (feasibleFill h) fs)
-        feasibleFill :: MetaVar -> Constant -> Bool
-        feasibleFill mv c = (isJust $ polyMgu (poly $ hole_ty mv) (poly $ con_type c))
-                         -- && (typeArity (hole_ty mv) == typeArity (con_type c))
+        allFeasibleFillings fs (n,ts) = (n, filter (feasibleFill ts) fs)
+        feasibleFill :: [Type] -> Constant -> Bool
+        feasibleFill ts c = and $ map (\t -> isJust $ polyMgu (poly t) ptc) ts
+          where ptc = poly $ con_type c
         containsAny xs ys = or $ map (flip elem ys) xs
 
-allHoles :: (Term Constant, Term Constant) -> [MetaVar]
-allHoles (t1,t2) = allHoles' t1 (allHoles' t2 [])
-  where allHoles' (Hole mv) hs = if mv `notElem` hs then hs ++ [mv] else hs
-        allHoles' (tl :$: tr) hs = allHoles' tl (allHoles' tr hs)
-        allHoles' _ hs = hs
+allHoles :: (Term Constant, Term Constant) -> [(String,[Type])]
+allHoles (l,r) = [(hid,[hole_ty h | h <- allmvars, hole_id h == hid])| hid <- nub $ map hole_id allmvars]
+  where allmvars = (mvars l ++ mvars r)
 
+isOp :: Constant -> Bool
+isOp f = typeArity ctf == 2 && (tas !! 0 == tas !! 1)
+  where ctf = con_type f
+        tas = typeArgs ctf
 -- Try to fill the holes in the given term using the given map of fillings
 canFill :: Map.Map String Constant -> Map.Map Int Type -> Term Constant -> Maybe (Term Constant, Map.Map Int Type)
-canFill fillings vartypes (Hole mv) = case Map.lookup (hole_id mv) fillings of
+canFill fillings vartypes (Hole mv) = case Map.lookup hid fillings of
   Nothing -> -- trace ("no filling for hole " ++ (hole_id mv))
     Nothing
   Just f ->  --trace ("filling hole " ++ (hole_id mv) ++ " with " ++ con_name f)
-    Just (Fun f, vartypes)
+    if (isSuffixOf "partialExpand" hid) && (isOp f)
+    then Nothing
+    else Just (Fun f, vartypes)
+  where hid = hole_id mv
 canFill _ vartypes (Var v) = case Map.lookup vid vartypes of
   Nothing -> -- trace ("variable: "++ prettyShow v)
     Just (Var v, Map.insert vid vtype vartypes)
@@ -143,7 +150,10 @@ partialApp maxArity p = nub [foldl partialExpand p c | c <- combos]
 
 -- Replace ?F with ?F X1 X2 ...
 partialExpand :: (Prop (Term Constant), Bool) -> (Int,MetaVar) -> (Prop (Term Constant), Bool)
-partialExpand (p,b) (k,h) | k <= typeArity (hole_ty h) || hole_id h `elem`  ["X","Y","Z"] = (p, b)
+partialExpand (p,b) (k,h) |    hole_id h `elem`  ["X","Y","Z"]
+                            || k <= ta = (p, b)
+                                 where ta = typeArity ht
+                                       ht = hole_ty h
 partialExpand (p,_) (k,h) | otherwise = (sprop (partialExpand' hname vnums lh,
                                            partialExpand' hname vnums rh), True)
   where (lh,rh) = sides p
@@ -152,7 +162,7 @@ partialExpand (p,_) (k,h) | otherwise = (sprop (partialExpand' hname vnums lh,
         fnum = freeVar [lh,rh]
         vnums = [fnum..fnum+k']
 partialExpand' hid vns x@(Hole mv) | hole_id mv == hid =
-                                              (Hole $ MV {hole_id = hid, hole_ty = typeVar})
+                                              (Hole $ MV {hole_id = hid ++ "partialExpand", hole_ty = typeVar})
                                               :@: fvs
                                           | otherwise = x
           where fvs = [Var $ V typeVar vn | vn <- vns]
