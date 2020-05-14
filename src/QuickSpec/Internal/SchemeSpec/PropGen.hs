@@ -133,7 +133,7 @@ checkVars vartypes _ = Just vartypes
 -- TODO: add support for toggling expansion?
 
 expandTemplate :: Int -> Prop (Term Constant) -> [(Prop (Term Constant), Bool)]
-expandTemplate maxArity p = concatMap (\x -> map (varReplace x) ["X","Y","Z",""]) $ concatMap (partialApp maxArity) $ nestApp p
+expandTemplate maxArity p = catMaybes $ concatMap (\x -> map (varReplace x) ["X","Y","Z",""]) $ concatMap (partialApp maxArity) $ nestApp p
 
 -- partialApp maxArity p returns all possible expansions of p using partial application
 -- with up to maxArity variables
@@ -183,8 +183,9 @@ appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
         appExpand' mv (t1 :$: t2) = (appExpand' mv t1 :$: appExpand' mv t2)
         appExpand' _ x = x
 
-varReplace :: (Prop (Term Constant), Bool) -> String -> (Prop (Term Constant),Bool)
-varReplace (p,b) m | m `elem` (map hole_id $ mvars p) = (sprop (replace m vn lh, replace m vn rh),b)
+varReplace :: (Prop (Term Constant), Bool) -> String -> Maybe (Prop (Term Constant),Bool)
+varReplace (p,b) "" = Just (p,b)
+varReplace (p,b) m | m `elem` (map hole_id $ mvars p) = Just (sprop (replace m vn lh, replace m vn rh),b)
     where vn = freeVar [lh,rh]
           (lh,rh) = sides p
           replace mname vnum x@(Hole mv) | hole_id mv == mname =
@@ -192,7 +193,7 @@ varReplace (p,b) m | m `elem` (map hole_id $ mvars p) = (sprop (replace m vn lh,
                                         | otherwise = x
           replace mname vnum (t1 :$: t2) = (replace mname vnum t1) :$: (replace mname vnum t2)
           replace _ _ t = t
-varReplace p _ | otherwise = p
+varReplace p _ | otherwise = Nothing
 
 
 sides :: Prop a -> (a, a)
