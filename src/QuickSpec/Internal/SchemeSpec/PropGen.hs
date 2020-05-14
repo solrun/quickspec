@@ -10,7 +10,6 @@ import Data.Maybe(isJust,catMaybes)
 import Data.List(nub, subsequences, find, isSuffixOf)
 import qualified Data.Map.Strict as Map
 import Control.Monad(liftM)
-
 import Debug.Trace
 
 -----------------------------------------------------------------
@@ -127,11 +126,6 @@ checkVars vartypes (t1 :$: t2) = case checkVars vartypes t1 of
   Just vts -> checkVars vts t2
 checkVars vartypes _ = Just vartypes
 
-doubleCheckVars :: (Term Constant, Term Constant) -> Maybe (Term Constant, Term Constant)
-doubleCheckVars p@(lt,rt) = case checkVars Map.empty lt of
-  Nothing -> Nothing
-  Just vts -> if isJust (checkVars vts rt) then Just p else Nothing
-doubleCheckVars _ = Nothing
 ---------------------------------------------
 -- Generalize templates
 ---------------------------------------------
@@ -139,7 +133,7 @@ doubleCheckVars _ = Nothing
 -- TODO: add support for toggling expansion?
 
 expandTemplate :: Int -> Prop (Term Constant) -> [(Prop (Term Constant), Bool)]
-expandTemplate maxArity p = concatMap (partialApp maxArity) $ nestApp p
+expandTemplate maxArity p = concatMap (\x -> map (varReplace x) ["X","Y","Z",""]) $ concatMap (partialApp maxArity) $ nestApp p
 
 -- partialApp maxArity p returns all possible expansions of p using partial application
 -- with up to maxArity variables
@@ -175,7 +169,8 @@ nestApp p = (p, False) : [(appExpand p f, True) | f <- nub $ mvars p]
 
 -- Replace ?F with ?F1 applied to ?F2
 appExpand :: Prop (Term Constant) -> MetaVar -> Prop (Term Constant)
-appExpand p m | hole_id m `elem` ["X","Y"] = p
+-- Assume that metavariable names "X", "Y", and "Z" are meant to represent constants
+appExpand p m | hole_id m `elem` ["X","Y","Z"] = p
 appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
   where h = hole_id m
         (lh,rh) = sides p
@@ -187,6 +182,18 @@ appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
           where ts' = map (appExpand' mv) ts
         appExpand' mv (t1 :$: t2) = (appExpand' mv t1 :$: appExpand' mv t2)
         appExpand' _ x = x
+
+varReplace :: (Prop (Term Constant), Bool) -> String -> (Prop (Term Constant),Bool)
+varReplace (p,b) m | m `elem` (map hole_id $ mvars p) = (sprop (replace m vn lh, replace m vn rh),b)
+    where vn = freeVar [lh,rh]
+          (lh,rh) = sides p
+          replace mname vnum x@(Hole mv) | hole_id mv == mname =
+                                          (Var $ V typeVar vnum)
+                                        | otherwise = x
+          replace mname vnum (t1 :$: t2) = (replace mname vnum t1) :$: (replace mname vnum t2)
+          replace _ _ t = t
+varReplace p _ | otherwise = p
+
 
 sides :: Prop a -> (a, a)
 sides (_ :=>: (sl :=: sr)) = (sl,sr)
