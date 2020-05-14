@@ -53,6 +53,11 @@ schemeSpec cfg@Config{..} = do
     instances = cfg_instances `mappend` baseInstances
     eval = evalHaskell cfg_default_to instances
 
+    putP funs prop = do
+      let prop' = prettyDefinition funs (conditionalise prop)
+      putLine $ "putting" ++ (prettyShow prop')
+      (n :: Int,props) <- get
+      put (n,prop':props)
     present funs prop = do
       --putLine $ prettyShow prop
       let prop' = prettyDefinition funs (conditionalise prop)
@@ -75,10 +80,13 @@ schemeSpec cfg@Config{..} = do
    --                                 (Either (Value Ordy) (Term Constant))
    --                                 Terminal)) ()
     testProp n current p'@(p,expanded) = do
-      let pres = if n == 0 then \_ -> return () else present (constantsOf current)
+      let pres = if n == 0 then putP (constantsOf current) else present (constantsOf current)
       --putLine ("Pruner" ++ (prettyShow p))
       prune <- provable p'
-      if prune
+      (_, props) <- lift get
+      --putLine ("props" ++ (prettyShow props))
+      let extraprune = (or $ map (flip simplePrune p) props)
+      if (prune || extraprune)
         then do
           --putLine "pruned"
           return ()
@@ -87,22 +95,13 @@ schemeSpec cfg@Config{..} = do
           res <- test p
           case res of
             Nothing -> do
-              (_, props) <- lift get
-              --putLine "Pruning..."
-              let thing = (or $ map (flip simplePrune p) props)
-              if thing
-                then do
-                  --putLine "pruned"
-                  return ()
-                else do
-                  --putLine "not pruned"
-                  _ <- addPoly p
+              _ <- addPoly p
                   --putLine (show expanded)
-                  lift $ pres p
-                  where
-                    addPoly aprop = do
-                      let insts = typeInstances univ (canonicalise (regeneralise aprop))
-                      mapM_ add insts
+              lift $ pres p
+                where
+                  addPoly aprop = do
+                    let insts = typeInstances univ (canonicalise (regeneralise aprop))
+                    mapM_ add insts
             _ -> return ()
 
     mainOf n current sofar = do
@@ -116,8 +115,9 @@ schemeSpec cfg@Config{..} = do
       let testpres prop = testProp n current prop
       let testprops (t,b) = zip (templateProps t (constantsOf sofar) (constantsOf current)) (repeat b)
       let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
-      let runschemespec schema = when (n > 0) $ do
-          putLine ("Searching for " ++ fst schema ++ " properties...")
+      let runschemespec schema = do
+          when (n > 0) $ do
+            putLine ("Searching for " ++ fst schema ++ " properties...")
           --putLine ("Generating expanded templates...")
           let expandedTemplates = expandTemplate maxArity $ snd schema
           --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
