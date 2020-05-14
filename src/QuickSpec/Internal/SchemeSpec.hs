@@ -136,7 +136,7 @@ schemeSpec cfg@Config{..} = do
       when (n > 0) $ do
         putLine ""
 
-    main = Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 0} $ do
+    main = Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 1} $ do
       (n :: Int, props) <- lift get
       lift $ put (n, cfg_background ++ props)
       forM_ cfg_background $ \prop -> do
