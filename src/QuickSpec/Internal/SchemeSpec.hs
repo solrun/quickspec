@@ -114,7 +114,9 @@ schemeSpec cfg@Config{..} = do
         putLine "== Laws =="
       let testpres prop = testProp n current prop
       let testprops (t,b) = zip (templateProps t (constantsOf sofar) (constantsOf current)) (repeat b)
-      let maxArity = maximum $ map (typeArity . typ) (constantsOf current)
+      let maxArity = maxA $ map (typeArity . typ) (constantsOf current)
+            where maxA [] = 0
+                  maxA xs = maximum xs
       let runschemespec schema = do
           when (n > 0) $ do
             putLine ("Searching for " ++ fst schema ++ " properties...")
