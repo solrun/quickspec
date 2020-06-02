@@ -1,17 +1,14 @@
 {-# LANGUAGE ScopedTypeVariables, ConstraintKinds, RankNTypes, ConstraintKinds, FlexibleContexts #-}
 import QuickSpec
 import Data.Time
-mySig = [
-  con "reverse" (reverse :: [A] -> [A]),
-  con "++" ((++) :: [A] -> [A] -> [A]),
-  con "[]" ([] :: [A]),
-  con "map" (map :: (A -> B) -> [A] -> [B]),
-  con "length" (length :: [A] -> Int),
-  con "concat" (concat :: [[A]] -> [A]),
-  arith (Proxy :: Proxy Int)
+arithSig = [
+  con "0" (0 :: Int),
+  con "1" (1 :: Int),
+  con "+" ((+) :: Int -> Int -> Int),
+  con "*" ((*) :: Int -> Int -> Int)
   ,template "fix-point/id" "?F(?X) = ?X"
   ,template "left-id-elem" "?F(?Y,X) = X"
-  ,template "right-id-elem" "?f(X,?Y) = X"
+  ,template "right-id-elem" "?F(X,?Y) = X"
   ,template "cancel" "?F(?G(X)) = ?F(X)"
   ,template "commutative" "?F(X,Y) = ?F(Y,X)"
   ,template "op-commute" "?F(?G(X)) = ?G(?F(X))"
@@ -21,9 +18,9 @@ mySig = [
   ]
 main = do
   start <- getCurrentTime
-  qqSpec mySig
+  qqSpec arithSig
   qqTime <- getCurrentTime
-  quickSpec mySig
+  quickSpec arithSig
   qsTime <- getCurrentTime
   print (diffUTCTime qqTime start)
   print (diffUTCTime qsTime qqTime)

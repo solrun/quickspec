@@ -38,19 +38,13 @@ main = qqSpec [
   con "partition" (partition :: (A -> Bool) -> [A] -> ([A], [A])),
   con "fst" (fst :: (A, B) -> A),
   con "take" (take :: Int -> [A] -> [A])
-  ,template "2-2-distributive" "?F(F,?G(X,Y)) = ?G(?F(F,X),?F(F,Y))"
-  ,template "1-2-distributive" "?F(F,?G(X)) = ?G(?F(F,X))"
-  ,template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))"
-  ,template "commutative" "?F(X,Y) = ?F(Y,X)"
-  ,template "nest-commutative" "?F(?G(X,Y)) = ?F(?G(Y,X))"
-  ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
-  ,template "cancel" "?F(?G(X)) = ?F(X)"
-  ,template "cancel-2" "?F(?G(F,X)) = ?F(X)"
-  ,template "comp-id" "?F(?G(X))=X"
-  ,template "op-id-elem" "?F(X,?G) = X"
-  ,template "op-zero-elem" "?F(X,?G) = ?G"
+  ,template "id" "?F(X)=X"
   ,template "fix-point" "?F(?X) = ?X"
-   -- example of a template producing larger properties
-  ,template "2o-2-2-distributive" "?F(?H(Z),?G(X,Y)) = ?G(?F(?H(Z),X),?F(?H(Z),Y))"
-  ,template "hm" "?F(?G(X),?G(Y))=?F(?G(Y),?G(X))"
+  ,template "cancel" "?F(?G(X)) = ?F(X)"
+  ,template "op-id-elem" "?F(X,?G) = X"
+  ,template "commutative" "?F(X,Y) = ?F(Y,X)"
+  ,template "op-commute" "?F(?G(X)) = ?G(?F(X))"
+  ,template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))"
+  ,template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))"
+  ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
   ]
