@@ -55,7 +55,7 @@ schemeSpec cfg@Config{..} = do
 
     putP funs prop = do
       let prop' = prettyDefinition funs (conditionalise prop)
-      putLine $ "putting" ++ (prettyShow prop')
+      --putLine $ "putting" ++ (prettyShow prop')
       (n :: Int,props) <- get
       put (n,prop':props)
     present funs prop = do
