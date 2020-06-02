@@ -73,7 +73,7 @@ Searching for right-id-elem properties...
  27. x && null nil = x
  28. xs ++ toList nil = xs
  29. mergeLists xs (toList nil) = xs
- 30. merge h (fromList []) = h
+ - 30. merge h (fromList []) = h
  31. x || null (insert y h) = x
 Searching for commutative properties...
  32. merge h h1 = merge h1 h
@@ -92,12 +92,12 @@ Searching for analogy-distributive properties...
  42. merge (fromList xs) (fromList ys) = fromList (xs ++ ys)
  43. merge (fromList xs) (fromList ys) = fromList (mergeLists xs ys)
  44. sort (toList h ++ toList h1) = toList (merge h h1)
- 45. sort (mergeLists (toList h) (toList h1)) = toList (merge h h1)
+ - 45. sort (mergeLists (toList h) (toList h1)) = toList (merge h h1)
  46. not (null h) || not (null h1) = not (null (merge h h1))
  47. nullList (toList h) && nullList (toList h1) = nullList (toList (merge h h1))
- 48. merge (fromList (toList h)) (fromList (toList h1)) = fromList (toList (merge h h1))
- 49. merge (fromList (sort xs)) (fromList (sort ys)) = fromList (sort (xs ++ ys))
- 50. null (insert x h) || null (insert x h1) = null (insert x (merge h h1))
+ - 48. merge (fromList (toList h)) (fromList (toList h1)) = fromList (toList (merge h h1))
+ - 49. merge (fromList (sort xs)) (fromList (sort ys)) = fromList (sort (xs ++ ys))
+ - 50. null (insert x h) || null (insert x h1) = null (insert x (merge h h1))
  51. null (insert x h) && null (insert x h1) = null (insert x (merge h h1))
 Searching for associative-3 properties...
  52. merge (merge h h1) h2 = merge h (merge h1 h2)
