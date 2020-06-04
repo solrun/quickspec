@@ -29,6 +29,7 @@ import QuickSpec.Internal.Explore hiding (quickSpec)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader
 import QuickSpec.Internal.Terminal
 import Text.Printf
 import QuickSpec.Internal.SchemeSpec.PropGen
@@ -36,6 +37,7 @@ import QuickSpec.Internal.Testing
 import QuickSpec.Internal.SchemeSpec.Matching
 import QuickSpec.Internal.Explore.Polymorphic
 import Debug.Trace
+import Data.Functor.Identity
 
 
 
@@ -149,6 +151,8 @@ schemeSpec cfg@Config{..} = do
         currentRound n = (concat . take 1 . drop n)
         roundsSoFar n  = (concat . take (n+1))
         numrounds      = length cfg_constants
+
+  env <- runIdentity <$> generate (QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval (QuickCheck.Tester ask))
 
   join $
     fmap withStdioTerminal $
