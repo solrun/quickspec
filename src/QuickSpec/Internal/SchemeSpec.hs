@@ -38,6 +38,8 @@ import QuickSpec.Internal.SchemeSpec.Matching
 import QuickSpec.Internal.Explore.Polymorphic
 import Debug.Trace
 import Data.Functor.Identity
+import QuickSpec.Internal.SetCover
+import QuickSpec.Internal.Explore.Schemas
 
 
 
@@ -55,56 +57,30 @@ schemeSpec cfg@Config{..} = do
     instances = cfg_instances `mappend` baseInstances
     eval = evalHaskell cfg_default_to instances
 
-    putP funs prop = do
-      let prop' = prettyDefinition funs (conditionalise prop)
-      --putLine $ "putting" ++ (prettyShow prop')
-      (n :: Int,props) <- get
-      put (n,prop':props)
-    present funs prop = do
-      --putLine $ prettyShow prop
-      let prop' = prettyDefinition funs (conditionalise prop)
-      when (cfg_print_filter prop) $ do
-        (n :: Int, props) <- get
-        put (n+1, prop':props)
-        putLine $
-          printf "%3d. %s" n $ show $
-            prettyProp (names instances) prop' <+> disambiguatePropType prop
-    provable (([] :=>: t :=: u), True) = do
-      t' <- normalise (oneTypeVar t)
-      u' <- normalise (oneTypeVar u)
-      return (t' == u')
-    provable _ = return False
-   -- testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
-   --                              (Int, [Prop (Term Constant)])
-   --                              (QuickCheck.Tester
-   --                                 TestCase
-   --                                 (Term Constant)
-   --                                 (Either (Value Ordy) (Term Constant))
-   --                                 Terminal)) ()
-    testProp n current p'@(p,expanded) = do
-      let pres = if n == 0 then putP (constantsOf current) else present (constantsOf current)
-      --putLine ("Pruner" ++ (prettyShow p))
-      prune <- provable p'
-      (_, props) <- lift get
-      --putLine ("props" ++ (prettyShow props))
-      let extraprune = (or $ map (flip simplePrune p) props)
-      if (prune || extraprune)
-        then do
-          --putLine "pruned"
-          return ()
-        else do
-          --putLine ("Testing...")
-          res <- test p
-          case res of
-            Nothing -> do
-              _ <- addPoly p
-                  --putLine (show expanded)
-              lift $ pres p
-                where
-                  addPoly aprop = do
-                    let insts = typeInstances univ (canonicalise (regeneralise aprop))
-                    mapM_ add insts
-            _ -> return ()
+  env <- runIdentity <$> generate (QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval (QuickCheck.Tester ask))
+  let
+    evalProp tc ([] :=>: t :=: u) = eval tc t == eval tc u
+    testcases = QuickCheck.env_tests env
+
+--    putP funs prop = do
+--      let prop' = prettyDefinition funs (conditionalise prop)
+--      --putLine $ "putting" ++ (prettyShow prop')
+--      (n :: Int,props) <- get
+--      put (n,prop':props)
+--    present funs prop = do
+--      --putLine $ prettyShow prop
+--      let prop' = prettyDefinition funs (conditionalise prop)
+--      when (cfg_print_filter prop) $ do
+--        (n :: Int, props) <- get
+--        put (n+1, prop':props)
+--        putLine $
+--          printf "%3d. %s" n $ show $
+--            prettyProp (names instances) prop' <+> disambiguatePropType prop
+--    provable (([] :=>: t :=: u), True) = do
+--      t' <- normalise (oneTypeVar t)
+--      u' <- normalise (oneTypeVar u)
+--      return (t' == u')
+--    provable _ = return False
 
     mainOf n current sofar = do
       unless (null (current cfg_constants)) $ do
@@ -114,29 +90,20 @@ schemeSpec cfg@Config{..} = do
       when (n > 0) $ do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
-      let testpres prop = testProp n current prop
-      let testprops (t,b) = zip (templateProps t (constantsOf sofar) (constantsOf current)) (repeat b)
-      let maxArity = maxA $ map (typeArity . typ) (constantsOf current)
-            where maxA [] = 0
-                  maxA xs = maximum xs
-      let runschemespec schema = do
-          when (n > 0) $ do
-            putLine ("Searching for " ++ fst schema ++ " properties...")
-          --putLine ("Generating expanded templates...")
-          let expandedTemplates = expandTemplate maxArity $ snd schema
-          --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
-          --putLine "Generating properties for testing..."
-          let testps = concatMap testprops expandedTemplates
-          --putLine "Testing properties ..."
-          mapM_ testpres testps
-      let runwithPruning schema = do
-          (m :: Int, props) <- get
-          put (m, props) -- Set props found by current template to []
-          let runschema = runschemespec schema
-          Twee.run cfg_twee { Twee.cfg_max_term_size = 10} runschema
 
-      mapM_ runschemespec cfg_schemas
-      -- mapM_ runwithPruning cfg_schemas
+      let
+        literals =
+          concatMap (expandedTemplateProps (sofar cfg_constants) (current cfg_constants)) (map snd cfg_schemas)
+
+        testResults =
+          [ (lit, passingTestcases testcases evalProp lit)
+          | (lit, _) <- literals ]
+
+        props = covers testResults
+
+      mapM_ (putLine . prettyShow) literals
+      mapM_ (putLine . prettyShow) props
+
       when (n > 0) $ do
         putLine ""
 
@@ -152,11 +119,23 @@ schemeSpec cfg@Config{..} = do
         roundsSoFar n  = (concat . take (n+1))
         numrounds      = length cfg_constants
 
-  env <- runIdentity <$> generate (QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval (QuickCheck.Tester ask))
-
   join $
     fmap withStdioTerminal $
     generate $
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
     --runConditionals constants $
     fmap (reverse . snd) $ flip execStateT (1, []) main
+
+passingTestcases :: [testcase] -> (testcase -> Prop t -> Bool) -> Prop t -> [Int]
+passingTestcases tcs eval t =
+  [i | (i, tc) <- zip [0..] tcs, eval tc t]
+
+expandedTemplateProps :: [Constant] -> [Constant] -> Prop (Term Constant) -> [(Prop (Term Constant), Bool)]
+expandedTemplateProps sofar current template =
+  [ (prop', b)
+  | (expanded, b) <- expandedTemplates,
+    prop <- templateProps expanded sofar current,
+    prop' <- allUnifications (\_ -> False) prop ]
+  where
+    expandedTemplates = expandTemplate maxArity template
+    maxArity = maximum (0:map (typeArity . typ) current)

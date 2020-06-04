@@ -168,7 +168,7 @@ mostGeneral singleUse s = evalState (aux s) Map.empty
 mostSpecific :: Term f -> Term f
 mostSpecific = subst (\(V ty _) -> Var (mkVar ty 0))
 
-allUnifications :: (Type -> Bool) -> Term fun -> [Term fun]
+allUnifications :: Symbolic fun a => (Type -> Bool) -> a -> [a]
 allUnifications singleUse t = map f ss
   where
     vs = [ map (x,) vs | xs@(y:_) <- partitionBy typ (usort (vars t)), let vs = varsOf (typ y), x <- xs ]
@@ -178,4 +178,4 @@ allUnifications singleUse t = map f ss
 
     varsOf ty
       | singleUse ty = [mkVar ty 0]
-      | otherwise = map (mkVar ty) [0..3]
+      | otherwise = map (mkVar ty) [0..1]

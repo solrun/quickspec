@@ -101,6 +101,7 @@ library
     QuickSpec.Internal.SchemeSpec
     QuickSpec.Internal.SchemeSpec.PropGen
     QuickSpec.Internal.SchemeSpec.Matching
+    QuickSpec.Internal.SetCover
 
   Build-depends:
     QuickCheck >= 2.10,
