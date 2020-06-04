@@ -115,4 +115,5 @@ library
     template-haskell,
     transformers,
     twee-lib == 2.1.5,
-    uglymemo
+    uglymemo,
+    minisat
