@@ -1,0 +1,214 @@
+== Functions ==
+ (,) :: a -> b -> (a, b)
+ fst :: (a, b) -> a
+ snd :: (a, b) -> b
+ (+) :: Int -> Int -> Int
+   0 :: Int
+succ :: Int -> Int
+
+== Functions ==
+   length :: [a] -> Int
+     sort :: [Int] -> [Int]
+    scanr :: (a -> b -> b) -> b -> [a] -> [b]
+    (>>=) :: [a] -> (a -> [b]) -> [b]
+  reverse :: [a] -> [a]
+    (>=>) :: (a -> [b]) -> (b -> [c]) -> a -> [c]
+      (:) :: a -> [a] -> [a]
+    break :: (a -> Bool) -> [a] -> ([a], [a])
+   filter :: (a -> Bool) -> [a] -> [a]
+    scanl :: (a -> b -> a) -> a -> [b] -> [a]
+  zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+   concat :: [[a]] -> [a]
+      zip :: [a] -> [b] -> [(a, b)]
+    usort :: [Int] -> [Int]
+      sum :: [Int] -> Int
+     (++) :: [a] -> [a] -> [a]
+      map :: (a -> a) -> [a] -> [a]
+    foldl :: (a -> a -> a) -> a -> [a] -> a
+takeWhile :: (a -> Bool) -> [a] -> [a]
+    foldr :: (a -> a -> a) -> a -> [a] -> a
+     drop :: Int -> [a] -> [a]
+dropWhile :: (a -> Bool) -> [a] -> [a]
+     span :: (a -> Bool) -> [a] -> ([a], [a])
+    unzip :: [(a, b)] -> ([a], [b])
+       [] :: [a]
+partition :: (a -> Bool) -> [a] -> ([a], [a])
+     take :: Int -> [a] -> [a]
+
+== Laws ==
+Searching for id properties...
+  1. reverse (reverse xs) = xs
+Searching for fixpoint properties...
+  2. sort [] = []
+  3. reverse [] = []
+  4. usort [] = []
+  5. filter p [] = []
+  6. map f [] = []
+  7. takeWhile p [] = []
+  8. drop x [] = []
+  9. dropWhile p [] = []
+ 10. take x [] = []
+ 11. zipWith f xs [] = []
+ 12. fst (unzip []) = []
+ 13. snd (unzip []) = []
+ 14. sort (concat []) = []
+ 15. reverse (concat []) = []
+ 16. concat (concat []) = []
+ 17. usort (concat []) = []
+ 18. fst (break p []) = []
+ 19. fst (span p []) = []
+ 20. fst (partition p []) = []
+ 21. snd (break p []) = []
+ 22. snd (span p []) = []
+ 23. snd (partition p []) = []
+Searching for cancel properties...
+ 24. length (sort xs) = length xs
+ 25. length (reverse xs) = length xs
+ 26. sort (sort xs) = sort xs
+ 27. sort (reverse xs) = sort xs
+ 28. usort (sort xs) = usort xs
+ 29. usort (reverse xs) = usort xs
+ 30. usort (usort xs) = usort xs
+ 31. sum (sort xs) = sum xs
+ 32. sum (reverse xs) = sum xs
+ 33. length (map f xs) = length xs
+ 34. length (concat (reverse xss)) = length (concat xss)
+ 35. sort (concat (reverse xss)) = sort (concat xss)
+ 36. usort (concat (reverse xss)) = usort (concat xss)
+ 37. sum (concat (reverse xss)) = sum (concat xss)
+ 38. length (x : sort xs) = length (x : xs)
+ 39. length (x : reverse xs) = length (x : xs)
+ 40. length (filter p (sort xs)) = length (filter p xs)
+ 41. length (filter p (reverse xs)) = length (filter p xs)
+ 42. length (drop x (sort xs)) = length (drop x xs)
+ 43. length (drop x (reverse xs)) = length (drop x xs)
+ 44. length (take x (sort xs)) = length (take x xs)
+ 45. length (take x (reverse xs)) = length (take x xs)
+ 46. sort (x : sort xs) = sort (x : xs)
+ 47. sort (filter p (sort xs)) = sort (filter p xs)
+ 48. sort (map f (sort xs)) = sort (map f xs)
+ 49. usort (x : reverse xs) = usort (x : xs)
+ 50. usort (x : usort xs) = usort (x : xs)
+ 51. usort (filter p (reverse xs)) = usort (filter p xs)
+ 52. usort (filter p (usort xs)) = usort (filter p xs)
+ 53. usort (map f (reverse xs)) = usort (map f xs)
+ 54. usort (map f (usort xs)) = usort (map f xs)
+ 55. sum (x : reverse xs) = sum (x : xs)
+ 56. sum (filter p (reverse xs)) = sum (filter p xs)
+ 57. sum (map f (reverse xs)) = sum (map f xs)
+ 58. length (x : map f xs) = length (x : xs)
+ 59. length (drop x (map f xs)) = length (drop x xs)
+ 60. length (take x (map f xs)) = length (take x xs)
+ 61. length (scanr f x (sort xs)) = length (scanr f x xs)
+ 62. length (scanr f x (reverse xs)) = length (scanr f x xs)
+ 63. length (scanl f x (sort xs)) = length (scanl f x xs)
+ 64. length (scanl f x (reverse xs)) = length (scanl f x xs)
+ 65. length (zipWith f xs (sort ys)) = length (zipWith f xs ys)
+ 66. length (zipWith f xs (reverse ys)) = length (zipWith f xs ys)
+ 67. length (scanr f x (map g xs)) = length (scanr f x xs)
+ 68. length (scanl f x (map g xs)) = length (scanl f x xs)
+ 69. length (zipWith f xs (map g ys)) = length (zipWith f xs ys)
+ 70. length (fst (unzip xs)) = length xs
+ 71. length (snd (unzip xs)) = length xs
+Searching for left-id-elem properties...
+ 72. [] ++ xs = xs
+ 73. drop 0 xs = xs
+Searching for right-id-elem properties...
+ 74. xs ++ [] = xs
+ 75. foldl f x [] = x
+ 76. foldr f x [] = x
+ 77. concat (xs : []) = xs
+ 78. sum (x : []) = x
+ 79. concat (scanr f xs []) = xs
+ 80. concat (scanl f xs []) = xs
+ 81. sum (scanr f x []) = x
+ 82. sum (scanl f x []) = x
+Searching for commutative properties...
+ 83. length (zip xs ys) = length (zip ys xs)
+ 84. length (xs ++ ys) = length (ys ++ xs)
+ 85. sort (xs ++ ys) = sort (ys ++ xs)
+ 86. length (zipWith f xs ys) = length (zipWith f ys xs)
+Searching for op-commute properties...
+ 87. sort (usort xs) = usort (sort xs)
+ 88. sort (filter p xs) = filter p (sort xs)
+ 89. reverse (filter p xs) = filter p (reverse xs)
+ 90. reverse (map f xs) = map f (reverse xs)
+ 91. usort (filter p xs) = filter p (usort xs)
+ 92. filter p (filter q xs) = filter q (filter p xs)
+ 93. map f (drop x xs) = drop x (map f xs)
+ 94. map f (take x xs) = take x (map f xs)
+ 95. takeWhile p (takeWhile q xs) = takeWhile q (takeWhile p xs)
+ 96. takeWhile p (take x xs) = take x (takeWhile p xs)
+ 97. drop x (drop y xs) = drop y (drop x xs)
+ 98. take x (take y xs) = take y (take x xs)
+ 99. take x (zipWith f xs ys) = zipWith f xs (take x ys)
+100. fst (unzip (reverse xs)) = reverse (fst (unzip xs))
+101. snd (unzip (reverse xs)) = reverse (snd (unzip xs))
+102. fst (unzip (drop x xs)) = drop x (fst (unzip xs))
+103. fst (unzip (take x xs)) = take x (fst (unzip xs))
+104. snd (unzip (drop x xs)) = drop x (snd (unzip xs))
+105. snd (unzip (take x xs)) = take x (snd (unzip xs))
+106. fst (partition p (sort xs)) = sort (fst (partition p xs))
+107. fst (partition p (reverse xs)) = reverse (fst (partition p xs))
+108. fst (partition p (usort xs)) = usort (fst (partition p xs))
+109. snd (partition p (sort xs)) = sort (snd (partition p xs))
+110. snd (partition p (reverse xs)) = reverse (snd (partition p xs))
+111. snd (partition p (usort xs)) = usort (snd (partition p xs))
+112. fst (break p (takeWhile q xs)) = takeWhile q (fst (break p xs))
+113. fst (break p (take x xs)) = take x (fst (break p xs))
+114. fst (span p (takeWhile q xs)) = takeWhile q (fst (span p xs))
+115. fst (span p (take x xs)) = take x (fst (span p xs))
+116. fst (partition p (filter q xs)) = filter q (fst (partition p xs))
+117. snd (partition p (filter q xs)) = filter q (snd (partition p xs))
+118. takeWhile p (sort (sort xs)) = sort (takeWhile p (sort xs))
+119. takeWhile p (sort (usort xs)) = usort (takeWhile p (sort xs))
+120. drop x (sort (sort xs)) = sort (drop x (sort xs))
+121. drop x (usort (usort xs)) = usort (drop x (usort xs))
+122. dropWhile p (sort (sort xs)) = sort (dropWhile p (sort xs))
+123. dropWhile p (sort (usort xs)) = usort (dropWhile p (sort xs))
+124. take x (sort (sort xs)) = sort (take x (sort xs))
+125. take x (usort (usort xs)) = usort (take x (usort xs))
+Searching for 2-distributive properties...
+126. filter p (xs ++ ys) = filter p xs ++ filter p ys
+127. map f (xs ++ ys) = map f xs ++ map f ys
+128. drop x (zipWith f xs ys) = zipWith f (drop x xs) (drop x ys)
+129. take x (zipWith f xs ys) = zipWith f (take x xs) (take x ys)
+130. fst (unzip (xs ++ ys)) = fst (unzip xs) ++ fst (unzip ys)
+131. snd (unzip (xs ++ ys)) = snd (unzip xs) ++ snd (unzip ys)
+132. concat (concat (xsss ++ ysss)) = concat (concat xsss) ++ concat (concat ysss)
+133. fst (partition p (xs ++ ys)) = fst (partition p xs) ++ fst (partition p ys)
+134. snd (partition p (xs ++ ys)) = snd (partition p xs) ++ snd (partition p ys)
+135. concat (filter p (xss ++ yss)) = concat (filter p xss) ++ concat (filter p yss)
+136. concat (map f (xss ++ yss)) = concat (map f xss) ++ concat (map f yss)
+137. filter p (concat (xss ++ yss)) = filter p (concat xss) ++ filter p (concat yss)
+138. map f (concat (xss ++ yss)) = map f (concat xss) ++ map f (concat yss)
+139. sort (fst (xs, ys)) = fst (sort xs, sort ys)
+140. sort (snd (xs, ys)) = snd (sort xs, sort ys)
+141. sort (sort (xs ++ ys)) = sort (sort xs ++ sort ys)
+142. usort (fst (xs, ys)) = fst (usort xs, usort ys)
+143. usort (snd (xs, ys)) = snd (usort xs, usort ys)
+144. usort (usort (xs ++ ys)) = usort (usort xs ++ usort ys)
+145. f >=> fst (g, h) = fst (f >=> g, f >=> h)
+146. f >=> snd (g, h) = snd (f >=> g, f >=> h)
+147. drop x (map f (zip xs ys)) = map f (zip (drop x xs) (drop x ys))
+148. drop x (drop y (zip xs ys)) = drop y (zip (drop x xs) (drop x ys))
+149. take x (map f (zip xs ys)) = map f (zip (take x xs) (take x ys))
+150. take x (takeWhile p (zip xs ys)) = takeWhile p (zip (take x xs) (take x ys))
+151. take x (take y (zip xs ys)) = take y (zip (take x xs) (take x ys))
+152. take x (zipWith f xs (zip ys zs)) = zipWith f xs (zip (take x ys) (take x zs))
+153. take x (zipWith f xs (zipWith g ys zs)) = zipWith f xs (zipWith g (take x ys) (take x zs))
+Searching for analogy-distributive properties...
+154. length xs + length ys = length (xs ++ ys)
+155. sum xs + sum ys = sum (xs ++ ys)
+156. concat xss ++ concat yss = concat (xss ++ yss)
+157. sum (reverse xs) + sum (reverse ys) = sum (reverse (xs ++ ys))
+158. sum (concat xss) + sum (concat yss) = sum (concat (xss ++ yss))
+159. length xs + length ys = length (sort (zs ++ ws))
+Searching for associative-3 properties...
+160. (f >=> g) >=> h = f >=> (g >=> h)
+161. (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
+162. usort (usort (xs ++ ys) ++ zs) = usort (xs ++ usort (ys ++ zs))
+163. filter p (filter p (xs ++ ys) ++ zs) = filter p (xs ++ filter p (ys ++ zs))
+164. take x (take x (xs ++ ys) ++ zs) = take x (xs ++ take x (ys ++ zs))
+
+228.083235825s
