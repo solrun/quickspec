@@ -39,11 +39,11 @@ import Debug.Trace
 
 
 
--- TODO: renaming
 -- TODO: documentation
+-- TODO: simplify/beautify?
 
-schemeSpec :: Config -> IO [Prop (Term Constant)]
-schemeSpec cfg@Config{..} = do
+roughSpec :: Config -> IO [Prop (Term Constant)]
+roughSpec cfg@Config{..} = do
   let
     constantsOf f =
       [true | any (/= Function) (map classify (f cfg_constants))] ++
@@ -53,11 +53,7 @@ schemeSpec cfg@Config{..} = do
     instances = cfg_instances `mappend` baseInstances
     eval = evalHaskell cfg_default_to instances
 
-    putP funs prop = do
-      let prop' = prettyDefinition funs (conditionalise prop)
-      --putLine $ "putting" ++ (prettyShow prop')
-      (n :: Int,props) <- get
-      put (n,prop':props)
+    -- Present property to user and keep for future pruning.
     present funs prop = do
       --putLine $ prettyShow prop
       let prop' = prettyDefinition funs (conditionalise prop)
@@ -67,25 +63,32 @@ schemeSpec cfg@Config{..} = do
         putLine $
           printf "%3d. %s" n $ show $
             prettyProp (names instances) prop' <+> disambiguatePropType prop
+
+    -- Keep track of property for pruning without presenting it.
+    putP funs prop = do
+      let prop' = prettyDefinition funs (conditionalise prop)
+      --putLine $ "putting" ++ (prettyShow prop')
+      (n :: Int,props) <- get
+      put (n,prop':props)
+
+    -- Check whether property should be pruned
     provable (([] :=>: t :=: u), True) = do
       t' <- normalise (oneTypeVar t)
       u' <- normalise (oneTypeVar u)
       return (t' == u')
     provable _ = return False
-   -- testProp :: Int -> ([[Constant]] -> [Constant]) -> ((Prop (Term Constant)), Bool) -> Twee.Pruner Constant (StateT
-   --                              (Int, [Prop (Term Constant)])
-   --                              (QuickCheck.Tester
-   --                                 TestCase
-   --                                 (Term Constant)
-   --                                 (Either (Value Ordy) (Term Constant))
-   --                                 Terminal)) ()
+
     testProp n current p'@(p,expanded) = do
+      -- Background properties are not printed but kept for future pruning
       let pres = if n == 0 then putP (constantsOf current) else present (constantsOf current)
       --putLine ("Pruner" ++ (prettyShow p))
       prune <- provable p'
       (_, props) <- lift get
       --putLine ("props" ++ (prettyShow props))
       let extraprune = (or $ map (flip simplePrune p) props)
+      -- For toggle pruning:
+      --if prune
+      --if extraprune
       if (prune || extraprune)
         then do
           --putLine "pruned"
@@ -104,6 +107,19 @@ schemeSpec cfg@Config{..} = do
                     mapM_ add insts
             _ -> return ()
 
+      --do
+      --  --putLine ("Testing...")
+      --  res <- test p
+      --  case res of
+      --    Nothing -> do
+      --      _ <- addPoly p
+      --          --putLine (show expanded)
+      --      lift $ pres p
+      --        where
+      --          addPoly aprop = do
+      --            let insts = typeInstances univ (canonicalise (regeneralise aprop))
+      --            mapM_ add insts
+      --    _ -> return ()
     mainOf n current sofar = do
       unless (null (current cfg_constants)) $ do
         putLine $ show $ pPrintSignature
@@ -125,13 +141,10 @@ schemeSpec cfg@Config{..} = do
           --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
           --putLine "Generating properties for testing..."
           let testps = concatMap testprops expandedTemplates
+          -- Turn off expansion
+          --let testps = concatMap testprops $ [(snd schema, False)]
           --putLine "Testing properties ..."
           mapM_ testpres testps
-      let runwithPruning schema = do
-          (m :: Int, props) <- get
-          put (m, props) -- Set props found by current template to []
-          let runschema = runschemespec schema
-          Twee.run cfg_twee { Twee.cfg_max_term_size = 10} runschema
 
       mapM_ runschemespec cfg_schemas
       -- mapM_ runwithPruning cfg_schemas
