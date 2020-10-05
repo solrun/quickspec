@@ -6,11 +6,12 @@ import qualified Data.List as L
 import Test.QuickCheck.Poly(OrdA(..))
 import Data.Function(on)
 import Data.Ord(comparing)
-import Data.Time
+
+roughSpec = qqSpec
+
 
 data BST k v = Leaf | Branch (BST k v ) k v (BST k v )
   deriving (Eq, Show , Generic, Typeable)
--- the operations under test
 
 
 instance (Ord k, Ord v) => Ord (BST k v) where
@@ -52,9 +53,7 @@ instance (Ord k , Arbitrary k , Arbitrary v) => Arbitrary (BST k v) where
   arbitrary = do
     kvs  <- arbitrary
     return $ foldr insert nil (kvs :: [(k, v)])
-  --shrink = genericShrink
 
--- auxiliary operations
 toList :: BST k v -> [(k,v)]
 toList Leaf = []
 toList (Branch l k v r) = toList l ++ [(k,v)] ++ toList r
@@ -75,7 +74,7 @@ treeSig =  [
   monoType (Proxy :: Proxy OrdA),
   inst (Sub Dict :: () :- Arbitrary (BST Int Int)),
   monoTypeWithVars ["t", "t1", "t2"] (Proxy :: Proxy (BST OrdA OrdA)),
-  --monoTypeWithVars ["t", "t1", "t2"] (Proxy :: Proxy (BST OrdA Int)),
+
   con "nil"    (nil :: BST OrdA OrdA),
   con "insert" (insert :: (OrdA, OrdA) -> BST OrdA OrdA -> BST OrdA OrdA),
   con "delete" (delete :: OrdA -> BST OrdA OrdA -> BST OrdA OrdA),
@@ -91,18 +90,42 @@ treeSig =  [
       con "unionList" (unionLists :: [(OrdA,OrdA)] -> [(OrdA,OrdA)] -> [(OrdA,OrdA)]),
       con "findList" (L.lookup :: OrdA -> [(OrdA,OrdA)] -> Maybe OrdA)
              ]
-  --,template "model-based" "?F(toList(X)) = toList(?G(X))"
-  --,template "model-based-2" "?F(Y,toList(X)) = toList(?G(Y,X))"
-  ,template "model-based-2-1" "?F(Y,toList(X)) = ?G(Y,X)"
-  ,template "model-based-0" "toList(?X) = ?Y"
-  ,template "model-based-distributive" "toList(?H(X,Y)) = ?F(toList(X),toList(Y))"
+
+  ,template "toList-0" "toList(?X) = ?Y"
+  ,template "toList-2" "?F(Y,toList(X)) = ?G(Y,X)"
+  ,template "toList-distributive" "toList(?H(X,Y)) = ?F(toList(X),toList(Y))"
   ]
 
 main = do
-  start <- getCurrentTime
-  qqSpec treeSig
-  qqTime <- getCurrentTime
-  quickSpec treeSig
-  qsTime <- getCurrentTime
-  print (diffUTCTime qqTime start)
-  print (diffUTCTime qsTime qqTime)
+  roughSpec treeSig
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--,template "toList-0" "toList(?X) = ?Y"
+--,template "toList-2" "?F(Y,toList(X)) = ?G(Y,X)"
+--,template "toList-distributive" "toList(?H(X,Y)) = ?F(toList(X),toList(Y))"

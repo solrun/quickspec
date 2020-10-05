@@ -1,7 +1,6 @@
 -- Pretty-printing combinators.
--- Illustrates observational equality and using custom generators.
--- See the QuickSpec paper for more details.
 {-# LANGUAGE DeriveDataTypeable, TypeOperators, StandaloneDeriving, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+--module PrettyPrinting where
 import Prelude hiding ((<>))
 import Control.Monad
 import Test.QuickCheck
@@ -48,33 +47,45 @@ nesting :: Doc -> Int
 nesting d = head [ i | i <- nums, unindented (nest (-i) d) ]
   where
     nums = 0:concat [ [i, -i] | i <- [1..] ]
+roughSpec = qqSpec
 
-main = qqSpec [
+
+
+
+
+ppSig = [
   withMaxTermSize 9,
+  monoTypeObserve (Proxy :: Proxy Doc),
+  defaultTo (Proxy :: Proxy Bool),
 
   background [
     con "[]" ([] :: [A]),
     con "++" ((++) :: [A] -> [A] -> [A]),
     con "0" (0 :: Int),
     con "+" ((+) :: Int -> Int -> Int),
-    con "length" (length :: [A] -> Int) ],
+    con "length" (length :: [A] -> Int)
+    ],
 
-
+  con "empty" empty,
   con "text" text,
   con "nest" nest,
-  --con "nesting" nesting,
   con "<>" (<>),
+  con "<+>" (<+>),
   con "$$" ($$),
+  con "hcat" hcat,
+  con "hsep" hsep,
+  con "vcat" vcat,
+  con "sep"  sep,
+  con "fsep" fsep,
 
-  monoTypeObserve (Proxy :: Proxy Doc),
-  defaultTo (Proxy :: Proxy Bool)
-  ,template "id" "?F(X)=X"
-  ,template "fix-point" "?F(?X) = ?X"
-  ,template "cancel" "?F(?G(X)) = ?F(X)"
-  ,template "left-id-elem" "?F(?G,X) = X"
-  ,template "right-id-elem" "?F(X,?G) = X"
-  ,template "commutative" "?F(X,Y) = ?F(Y,X)"
-  ,template "op-commute" "?F(?G(X)) = ?G(?F(X))"
-  ,template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))"
-  ,template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))"
-  ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"]
+  template "fix-point" "?F(?X) = ?X",
+  template "empty" "?F(?X) = empty",
+  template "left-id-elem" "?F(?G,X) = X",
+  template "right-id-elem" "?F(X,?G) = X",
+  template "commutative" "?F(X,Y) = ?F(Y,X)",
+  template "op-commute" "?F(?G(X)) = ?G(?F(X))",
+  template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))",
+  template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))",
+  template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"]
+
+main = roughSpec ppSig
