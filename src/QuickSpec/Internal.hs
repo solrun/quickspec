@@ -376,7 +376,7 @@ roughSpec s = do
 
 roughSpecWithQuickSpec :: Int -> [Sig] -> IO ()
 roughSpecWithQuickSpec k s = do
-  qsProps <- quickSpecResult $ (withMaxTermSize k) : s
+  qsProps <- quickSpecResult $ s ++ [withMaxTermSize k]
   RoughSpec.roughSpec $ makeConfig $ [addBackground qsProps] ++ s
   return ()
 
