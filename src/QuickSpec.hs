@@ -68,7 +68,8 @@ module QuickSpec(
   -- * Running QuickSpec
   quickSpec, Sig, Signature(..),
 
-  qqSpec,
+  roughSpec,
+  roughSpecWithQuickSpec,
 
   -- * Declaring functions and predicates
   con, predicate, predicateGen,

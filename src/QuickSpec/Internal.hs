@@ -29,7 +29,7 @@ import System.Environment
 import Data.Semigroup(Semigroup(..))
 import QuickSpec.Internal.Parse
 
-import QuickSpec.Internal.SchemeSpec(schemeSpec)
+import qualified QuickSpec.Internal.SchemeSpec as RoughSpec
 
 -- | Run QuickSpec. See the documentation at the top of this file.
 quickSpec :: Signature sig => sig -> IO ()
@@ -369,7 +369,14 @@ testSig = [
 makeConfig :: (Signature a) => a -> Haskell.Config
 makeConfig sig = runSig sig (Context 1 []) Haskell.defaultConfig
 
-qqSpec :: Signature sig => sig -> IO ()
-qqSpec s = do
-  schemeSpec $ makeConfig s
+roughSpec :: Signature sig => sig -> IO ()
+roughSpec s = do
+  RoughSpec.roughSpec $ makeConfig s
   return ()
+
+roughSpecWithQuickSpec :: Int -> [Sig] -> IO ()
+roughSpecWithQuickSpec k s = do
+  qsProps <- quickSpecResult $ (withMaxTermSize k) : s
+  RoughSpec.roughSpec $ makeConfig $ [addBackground qsProps] ++ s
+  return ()
+
