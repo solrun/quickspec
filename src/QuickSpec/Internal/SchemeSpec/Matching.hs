@@ -9,9 +9,12 @@ import Debug.Trace
 -- * Pruning
 ----------------------------------------------------------------------
 
+-- Should p2 be pruned based on p1?
 simplePrune ::  (Eq f, PrettyTerm f) => Prop (Term f) -> Prop (Term f) -> Bool
-simplePrune (_ :=>: p1) (_ :=>: p2) = (matchEqs p1 p2) || (appMatch p1 p2)
+simplePrune ([] :=>: p1) ([] :=>: p2) = (matchEqs p1 p2) || (appMatch p1 p2)
+simplePrune _ _ = False
 
+-- FIXME: This behaves strangely sometimes .. do we really need it?
 -- Check whether p2 is an instance of applying the same function to both
 -- sides of p1
 -- appMatch p1 p2 is true if p1 = t1 == t2 and p2 = f t1 == f t2

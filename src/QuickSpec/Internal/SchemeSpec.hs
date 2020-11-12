@@ -72,7 +72,7 @@ roughSpec cfg@Config{..} = do
       put (n,prop':props)
 
     -- Check whether property should be pruned
-    provable (([] :=>: t :=: u), True) = do
+    provable ((_ :=>: t :=: u), True) = do
       t' <- normalise (oneTypeVar t)
       u' <- normalise (oneTypeVar u)
       return (t' == u')
