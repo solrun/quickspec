@@ -208,4 +208,4 @@ templates = [
   ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
   ,template "invariant" "invariant(?F) = True"
   ]
-main = qqSpec (tinywm ++ templates)
+main = roughSpecWithQuickSpec 3 (tinywm ++ templates)

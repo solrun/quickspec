@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, ConstraintKinds, RankNTypes, ConstraintKinds, FlexibleContexts #-}
 import QuickSpec
-import Data.Time
+--import Data.Time
 mySig = [
   con "reverse" (reverse :: [A] -> [A]),
   con "++" ((++) :: [A] -> [A] -> [A]),

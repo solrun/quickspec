@@ -47,13 +47,13 @@ nesting :: Doc -> Int
 nesting d = head [ i | i <- nums, unindented (nest (-i) d) ]
   where
     nums = 0:concat [ [i, -i] | i <- [1..] ]
-roughSpec = qqSpec
 
 
 
 
 
 ppSig = [
+
   withMaxTermSize 9,
   monoTypeObserve (Proxy :: Proxy Doc),
   defaultTo (Proxy :: Proxy Bool),
@@ -79,7 +79,7 @@ ppSig = [
   con "fsep" fsep,
 
   template "fix-point" "?F(?X) = ?X",
-  template "empty" "?F(?X) = empty",
+  --template "empty" "?F(?X) = empty",
   template "left-id-elem" "?F(?G,X) = X",
   template "right-id-elem" "?F(X,?G) = X",
   template "commutative" "?F(X,Y) = ?F(Y,X)",
@@ -88,4 +88,4 @@ ppSig = [
   template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))",
   template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"]
 
-main = roughSpec ppSig
+main = roughSpecWithQuickSpec 2 ppSig

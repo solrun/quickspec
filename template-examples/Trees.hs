@@ -7,9 +7,6 @@ import Test.QuickCheck.Poly(OrdA(..))
 import Data.Function(on)
 import Data.Ord(comparing)
 
-roughSpec = qqSpec
-
-
 data BST k v = Leaf | Branch (BST k v ) k v (BST k v )
   deriving (Eq, Show , Generic, Typeable)
 

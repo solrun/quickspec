@@ -1,8 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables, ConstraintKinds, RankNTypes, ConstraintKinds, FlexibleContexts #-}
 import QuickSpec
-import Data.Time
+--import Data.Time
 mySig = [
-  predicate "not" not,
+  con "not" not,
   con "True" True,
   con "False" False,
   con "||" (||),
@@ -18,10 +18,10 @@ mySig = [
   ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
   ]
 main = do
-  start <- getCurrentTime
-  qqSpec mySig
-  qqTime <- getCurrentTime
+  --start <- getCurrentTime
+  roughSpec mySig
+  --qqTime <- getCurrentTime
   quickSpec mySig
-  qsTime <- getCurrentTime
-  print (diffUTCTime qqTime start)
-  print (diffUTCTime qsTime qqTime)
+  --qsTime <- getCurrentTime
+  --print (diffUTCTime qqTime start)
+  --print (diffUTCTime qsTime qqTime)
