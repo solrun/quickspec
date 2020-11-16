@@ -594,7 +594,7 @@ data Config =
     cfg_infer_instance_types :: Bool,
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
-    cfg_schemas :: [(String,Prop (Term Constant))]
+    cfg_schemas :: [(String,Prop (Term Constant))],
     cfg_print_style :: PrintStyle
     }
 
@@ -626,7 +626,7 @@ defaultConfig =
     cfg_infer_instance_types = False,
     cfg_background = [],
     cfg_print_filter = \_ -> True,
-    cfg_schemas = []
+    cfg_schemas = [],
     cfg_print_style = ForHumans }
 
 -- Extra types for the universe that come from in-scope instances.

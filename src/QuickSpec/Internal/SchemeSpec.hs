@@ -134,17 +134,17 @@ roughSpec cfg@Config{..} = do
             where maxA [] = 0
                   maxA xs = maximum xs
       let runschemespec schema = do
-          when (n > 0) $ do
-            putLine ("Searching for " ++ fst schema ++ " properties...")
-          --putLine ("Generating expanded templates...")
-          let expandedTemplates = expandTemplate maxArity $ snd schema
-          --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
-          --putLine "Generating properties for testing..."
-          let testps = concatMap testprops expandedTemplates
-          -- Turn off expansion
-          --let testps = concatMap testprops $ [(snd schema, False)]
-          --putLine "Testing properties ..."
-          mapM_ testpres testps
+            when (n > 0) $ do
+              putLine ("Searching for " ++ fst schema ++ " properties...")
+            --putLine ("Generating expanded templates...")
+            let expandedTemplates = expandTemplate maxArity $ snd schema
+            --putLine $ "Expanded templates: " ++ (show $ length expandedTemplates)
+            --putLine "Generating properties for testing..."
+            let testps = concatMap testprops expandedTemplates
+            -- Turn off expansion
+            --let testps = concatMap testprops $ [(snd schema, False)]
+            --putLine "Testing properties ..."
+            mapM_ testpres testps
 
       mapM_ runschemespec cfg_schemas
       -- mapM_ runwithPruning cfg_schemas

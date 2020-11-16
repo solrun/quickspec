@@ -101,13 +101,10 @@ module QuickSpec(
   -- * Customising QuickSpec
   withMaxTermSize, withMaxTests, withMaxTestSize, withMaxFunctions, defaultTo,
   withPruningDepth, withPruningTermSize, withFixedSeed,
-  withInferInstanceTypes, template,
-=======
-  withInferInstanceTypes, withPrintStyle, PrintStyle(..),
+  withInferInstanceTypes, template, withPrintStyle, PrintStyle(..),
 
   -- * Integrating with QuickCheck
   (=~=),
->>>>>>> upstream/master
 
   -- * Re-exported functionality
   Typeable, (:-)(..), Dict(..), Proxy(..), Arbitrary) where
