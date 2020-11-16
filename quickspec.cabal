@@ -1,6 +1,6 @@
 Name:                quickspec
-Version:             2.1.2
-Cabal-version:       >= 1.6
+Version:             2.1.5
+Cabal-version:       >= 1.10
 Build-type:          Simple
 
 Homepage:            https://github.com/nick8325/quickspec
@@ -71,6 +71,7 @@ source-repository head
   branch:   master
 
 library
+  default-language: Haskell2010
   ghc-options: -W
   hs-source-dirs: src
   Exposed-modules:
@@ -114,5 +115,5 @@ library
     spoon,
     template-haskell,
     transformers,
-    twee-lib == 2.1.5,
+    twee-lib == 2.2,
     uglymemo

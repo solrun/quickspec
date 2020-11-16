@@ -1,9 +1,9 @@
 -- A stress test using lots and lots of list functions.
 {-# LANGUAGE ScopedTypeVariables, ConstraintKinds, RankNTypes, ConstraintKinds, FlexibleContexts #-}
 import QuickSpec
+import QuickSpec.Internal.Utils
 import Data.List
 import Control.Monad
-import QuickSpec.Internal.Utils(usort)
 
 main = quickSpec [
   con "length" (length :: [A] -> Int),

@@ -2,18 +2,18 @@
 {-# LANGUAGE DeriveGeneric, TypeFamilies, DeriveFunctor, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, TypeOperators #-}
 module QuickSpec.Internal.Prop where
 
+import Data.Bool (bool)
 import Control.Monad
 import qualified Data.DList as DList
 import Data.Ord
 import QuickSpec.Internal.Type
 import QuickSpec.Internal.Utils
-import QuickSpec.Internal.Term
+import QuickSpec.Internal.Term hiding (first)
 import GHC.Generics(Generic)
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Control.Monad.Trans.State.Strict
 import Data.List
---import Data.Maybe(isJust)
+import Control.Arrow (first)
 
 data Prop a =
   (:=>:) {
@@ -87,7 +87,40 @@ x === y = [] :=>: x :=: y
 prettyProp ::
   (Typed fun, Apply (Term fun), PrettyTerm fun) =>
   (Type -> [String]) -> Prop (Term fun) -> Doc
-prettyProp cands = pPrint . nameVars cands
+prettyProp cands = pPrint . snd . nameVars cands
+
+prettyPropQC ::
+  (Typed fun, Apply (Term fun), PrettyTerm fun) =>
+  Type -> (Type -> Bool) -> Int -> (Type -> [String]) -> Prop (Term fun) -> Doc
+prettyPropQC default_to was_observed nth cands x
+  = hang (text first_char <+> text "(" <+> ((text $ show $ show $ pPrint law))) 2
+  $ hang (hsep [text ",", text "property", text "$"]) 4
+  $ hang ppr_binds 4
+  $ (ppr_ctx <+> with_sig lhs lhs_type <+> eq_fn <+> pPrint rhs) <> text ")"
+  where
+    eq = "==="
+    obs_eq = "=~="
+    eq_fn = text $ bool eq obs_eq $ was_observed lhs_type
+    lhs_type = typ lhs_for_type
+
+    first_char =
+      case nth of
+        1 -> "["
+        _ -> ","
+    ppr_ctx =
+      case length ctx of
+        0 -> pPrintEmpty
+        _ -> (hsep $ punctuate (text " &&") $ fmap (parens . pPrint) ctx) <+> text "==>"
+
+    (_ :=>: (lhs_for_type :=: _)) = x
+    (var_defs, law@(ctx :=>: (lhs :=: rhs))) = nameVars cands x
+    with_sig expr ty = print_sig (pPrint expr) ty
+    print_sig doc ty = parens $ doc <+> text "::" <+> pPrintType (defaultTo default_to ty)
+    ppr_binds =
+      case Map.size var_defs of
+        0 -> pPrintEmpty
+        _ -> (text "\\ " <> sep (fmap (uncurry print_sig) (fmap (first text) $ Map.assocs var_defs))) <+> text "->"
+
 
 data Named fun = Name String | Ordinary fun
 instance Pretty fun => Pretty (Named fun) where
@@ -97,14 +130,16 @@ instance PrettyTerm fun => PrettyTerm (Named fun) where
   termStyle Name{} = curried
   termStyle (Ordinary fun) = termStyle fun
 
-nameVars :: (Type -> [String]) -> Prop (Term fun) -> Prop (Term (Named fun))
+nameVars :: (Type -> [String]) -> Prop (Term fun) -> (Map.Map String Type, Prop (Term (Named fun)))
 nameVars cands p =
-  subst (\x -> Map.findWithDefault undefined x sub) (fmap (fmap Ordinary) p)
+  (var_defs, subst (\x -> Map.findWithDefault undefined x sub) (fmap (fmap Ordinary) p))
   where
-    sub = Map.fromList (evalState (mapM assign (nub (vars p))) Set.empty)
+    sub = Map.fromList sub_map
+    (sub_map, var_defs) = (runState (mapM assign (nub (vars p))) Map.empty)
     assign x = do
       s <- get
-      let names = supply (cands (typ x))
-          name = head (filter (`Set.notMember` s) names)
-      modify (Set.insert name)
+      let ty = typ x
+          names = supply (cands ty)
+          name = head (filter (`Map.notMember` s) names)
+      modify (Map.insert name ty)
       return (x, Fun (Name name))

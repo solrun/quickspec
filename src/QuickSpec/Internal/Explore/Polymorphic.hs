@@ -9,10 +9,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
-module QuickSpec.Internal.Explore.Polymorphic(module QuickSpec.Internal.Explore.Polymorphic, Result(..), Universe(..)) where
+module QuickSpec.Internal.Explore.Polymorphic(
+  module QuickSpec.Internal.Explore.Polymorphic,
+  Result(..),
+  Universe(..),
+  VariableUse(..)) where
 
 import qualified QuickSpec.Internal.Explore.Schemas as Schemas
-import QuickSpec.Internal.Explore.Schemas(Schemas, Result(..))
+import QuickSpec.Internal.Explore.Schemas(Schemas, Result(..), VariableUse(..))
 import QuickSpec.Internal.Term
 import QuickSpec.Internal.Type
 import QuickSpec.Internal.Testing
@@ -30,7 +34,8 @@ import Control.Monad.Trans.Class
 import qualified Twee.Base as Twee
 import Control.Monad
 import qualified Data.DList as DList
-import Data.Maybe(fromJust)
+import Data.Maybe
+
 data Polymorphic testcase result fun norm =
   Polymorphic {
     pm_schemas :: Schemas testcase result (PolyFun fun) norm,
@@ -53,14 +58,14 @@ schemas = lens pm_schemas (\x y -> y { pm_schemas = x })
 univ = lens pm_universe (\x y -> y { pm_universe = x })
 
 initialState ::
-  (Type -> Bool) ->
+  (Type -> VariableUse) ->
   Universe ->
   (Term fun -> Bool) ->
   (Term fun -> testcase -> result) ->
   Polymorphic testcase result fun norm
-initialState singleUse univ inst eval =
+initialState use univ inst eval =
   Polymorphic {
-    pm_schemas = Schemas.initialState singleUse (inst . fmap fun_specialised) (eval . fmap fun_specialised),
+    pm_schemas = Schemas.initialState use (inst . fmap fun_specialised) (eval . fmap fun_specialised),
     pm_universe = univ }
 
 polyFun :: Typed fun => fun -> PolyFun fun
@@ -137,7 +142,7 @@ instance (PrettyTerm fun, Ord fun, Typed fun, Apply (Term fun), MonadPruner (Ter
   add prop = PolyM $ do
     univ <- access univ
     let insts = typeInstances univ (canonicalise (regeneralise (mapFun fun_original prop)))
-    or <$> mapM add insts
+    mapM_ add insts
 
 instance MonadTester testcase (Term fun) m =>
   MonadTester testcase (Term (PolyFun fun)) (PolyM testcase result fun norm m) where
@@ -246,18 +251,29 @@ universe xs = Universe (Set.fromList univ)
           | fun <- types,
             ho <- arrows fun,
             sub <- typeInstancesList univBase (components fun) ]
-
-    -- Now close the type universe under "anti-substitution":
-    -- if u = typeSubst sub t, and u is in the universe, then
-    -- oneTypeVar t should be in the universe.
-    -- In practice this means replacing arbitrary subterms of
-    -- each type with a type variable.
-    univ = fixpoint (usort . oneTypeVar . concatMap antisubst) univHo
+    -- Finally, close the universe under the following operations:
+    -- * Unifying two types
+    -- * Unifying a function's argument with another type
+    --   (the closure includes the function type, the argument type
+    --   and the result type)
+    -- but only if some type in the universe is an instance of the
+    -- resulting type. The idea is that, if some term can be built
+    -- whose type is a generalisation of the type in the universe,
+    -- that generalised type should also be in the universe.
+    univ = oneTypeVar (fixpoint (usort . mgus) univHo)
       where
-        antisubst ty =
-          ty:
-          [ Twee.build (Twee.replacePosition n (Twee.var (Twee.V 0)) (Twee.singleton ty))
-          | n <- [0..Twee.len ty-1] ]
+        mgus tys =
+          tys ++
+          [ ty
+          | ty1 <- tys, ty2 <- tys, 
+            ty <- unPoly <$> combine (poly ty1) (poly ty2),
+            bound <- tys,
+            isJust (matchType ty bound) ]
+        combine ty1 ty2 =
+          maybeToList (polyMgu ty1 ty2) ++
+          maybeToList (tryApply ty1 ty2) ++
+          -- Get the function and argument types used by tryApply
+          concat [[poly x, poly y] | (x, y) <- maybeToList (unPoly <$> polyFunctionMgu ty1 ty2)]
 
     components ty =
       case unpackArrow ty of

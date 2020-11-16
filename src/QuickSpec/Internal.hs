@@ -8,9 +8,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeApplications #-}
 module QuickSpec.Internal where
 
-import QuickSpec.Internal.Haskell(Predicateable, PredicateTestCase, Names(..), Observe(..))
+import QuickSpec.Internal.Haskell(Predicateable, PredicateTestCase, Names(..), Observe(..), Use(..))
 import qualified QuickSpec.Internal.Haskell as Haskell
 import qualified QuickSpec.Internal.Haskell.Resolve as Haskell
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
@@ -18,6 +19,7 @@ import qualified QuickSpec.Internal.Pruning.UntypedTwee as Twee
 import qualified QuickSpec.Internal.Explore.Polymorphic as Polymorphic
 import QuickSpec.Internal.Prop
 import QuickSpec.Internal.Term(Term)
+import QuickSpec.Internal.Explore.Schemas(VariableUse(..))
 import Test.QuickCheck
 import Test.QuickCheck.Random
 import Data.Constraint
@@ -167,6 +169,16 @@ monoType _ =
     inst (Sub Dict :: () :- Ord a),
     inst (Sub Dict :: () :- Arbitrary a)]
 
+-- | Like 'monoType', but designed to be used with TypeApplications directly.
+--
+-- For example, you can add 'Foo' to your signature via:
+--
+-- @
+-- `mono` @Foo
+-- @
+mono :: forall a. (Ord a, Arbitrary a, Typeable a) => Sig
+mono = monoType (Proxy @a)
+
 -- | Declare a new monomorphic type using observational equivalence.
 -- The type must implement `Observe` and `Arbitrary`.
 monoTypeObserve :: forall proxy test outcome a.
@@ -177,15 +189,62 @@ monoTypeObserve _ =
     inst (Sub Dict :: () :- Observe test outcome a),
     inst (Sub Dict :: () :- Arbitrary a)]
 
+-- | Like 'monoTypeObserve', but designed to be used with TypeApplications directly.
+--
+-- For example, you can add 'Foo' to your signature via:
+--
+-- @
+-- `monoObserve` @Foo
+-- @
+monoObserve :: forall a test outcome.
+  (Observe test outcome a, Arbitrary test, Ord outcome, Arbitrary a, Typeable test, Typeable outcome, Typeable a) =>
+  Sig
+monoObserve = monoTypeObserve (Proxy @a)
+
+-- | Declare a new monomorphic type using observational equivalence, saying how you want variables of that type to be named.
+monoTypeObserveWithVars :: forall proxy test outcome a.
+  (Observe test outcome a, Arbitrary test, Ord outcome, Arbitrary a, Typeable test, Typeable outcome, Typeable a) =>
+  [String] -> proxy a -> Sig
+monoTypeObserveWithVars xs proxy =
+  monoTypeObserve proxy `mappend` vars xs proxy
+
+-- | Like 'monoTypeObserveWithVars', but designed to be used with TypeApplications directly.
+--
+-- For example, you can add 'Foo' to your signature via:
+--
+-- @
+-- `monoObserveVars` @Foo ["foo"]
+-- @
+monoObserveVars :: forall a test outcome.
+  (Observe test outcome a, Arbitrary test, Ord outcome, Arbitrary a, Typeable test, Typeable outcome, Typeable a) =>
+  [String] -> Sig
+monoObserveVars xs = monoTypeObserveWithVars xs (Proxy @a)
+
 -- | Declare a new monomorphic type, saying how you want variables of that type to be named.
 monoTypeWithVars :: forall proxy a. (Ord a, Arbitrary a, Typeable a) => [String] -> proxy a -> Sig
 monoTypeWithVars xs proxy =
   monoType proxy `mappend` vars xs proxy
 
+-- | Like 'monoTypeWithVars' designed to be used with TypeApplications directly.
+--
+-- For example, you can add 'Foo' to your signature via:
+--
+-- @
+-- `monoVars` @Foo ["foo"]
+-- @
+monoVars :: forall a. (Ord a, Arbitrary a, Typeable a) => [String] -> Sig
+monoVars xs = monoTypeWithVars xs (Proxy @a)
+
 -- | Customize how variables of a particular type are named.
 vars :: forall proxy a. Typeable a => [String] -> proxy a -> Sig
 vars xs _ = instFun (Names xs :: Names a)
 
+-- | Constrain how variables of a particular type may occur in a term.
+-- The default value is @'UpTo' 4@.
+variableUse :: forall proxy a. Typeable a => VariableUse -> proxy a -> Sig
+variableUse x _ = instFun (Use x :: Use a)
+
+-- | Declare a typeclass instance. QuickSpec needs to have an `Ord` and
 -- | Declare a typeclass instance. QuickSpec needs to have an `Ord` and
 -- `Arbitrary` instance for each type you want it to test.
 --
@@ -246,7 +305,7 @@ without sig xs =
 --
 -- Here is an example which first tests @0@ and @+@ and then adds @++@ and @length@:
 --
--- > main = quickSpec [sig1, sig2]
+-- > main = quickSpec (series [sig1, sig2])
 -- >   where
 -- >     sig1 = [
 -- >       con "0" (0 :: Int),
@@ -268,6 +327,10 @@ withMaxTermSize n = Sig (\_ -> setL Haskell.lens_max_size n)
 withMaxCommutativeSize :: Int -> Sig
 withMaxCommutativeSize n = Sig (\_ -> setL Haskell.lens_max_commutative_size n)
 
+-- | Limit how many different function symbols can occur in a term.
+withMaxFunctions :: Int -> Sig
+withMaxFunctions n = Sig (\_ -> setL Haskell.lens_max_functions n)
+
 -- | Set how many times to test each discovered law (default: 1000).
 withMaxTests :: Int -> Sig
 withMaxTests n =
@@ -282,6 +345,13 @@ withMaxTestSize n =
 -- | Set which type polymorphic terms are tested at.
 defaultTo :: Typeable a => proxy a -> Sig
 defaultTo proxy = Sig (\_ -> setL Haskell.lens_default_to (typeRep proxy))
+
+-- | Set how QuickSpec should display its discovered equations (default: 'ForHumans').
+--
+-- If you'd instead like to turn QuickSpec's output into QuickCheck tests, set
+-- this to 'ForQuickCheck'.
+withPrintStyle :: Haskell.PrintStyle -> Sig
+withPrintStyle style = Sig (\_ -> setL Haskell.lens_print_style style)
 
 -- | Set how hard QuickSpec tries to filter out redundant equations (default: no limit).
 --

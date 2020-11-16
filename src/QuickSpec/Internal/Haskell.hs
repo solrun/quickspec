@@ -35,7 +35,7 @@ import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
 import qualified QuickSpec.Internal.Pruning.Twee as Twee
 import QuickSpec.Internal.Explore hiding (quickSpec)
 import qualified QuickSpec.Internal.Explore
-import QuickSpec.Internal.Explore.Polymorphic(Universe(..))
+import QuickSpec.Internal.Explore.Polymorphic(Universe(..), VariableUse(..))
 import QuickSpec.Internal.Pruning.Background(Background)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -44,12 +44,22 @@ import Text.Printf
 import QuickSpec.Internal.Utils
 import Data.Lens.Light
 import GHC.TypeLits
-import QuickSpec.Internal.Explore.Conditionals
+import QuickSpec.Internal.Explore.Conditionals hiding (Normal)
 import Control.Spoon
 import qualified Data.Set as Set
 import qualified Test.QuickCheck.Poly as Poly
 import Numeric.Natural
 import Test.QuickCheck.Instances()
+import Data.Word
+import Data.List.NonEmpty (NonEmpty)
+import Data.Complex
+import Data.Ratio
+import Data.Functor.Compose
+import Data.Int
+import Data.Void
+import Data.Unique
+import qualified Data.Monoid as DM
+import qualified Data.Semigroup as DS
 
 baseInstances :: Instances
 baseInstances =
@@ -75,6 +85,8 @@ baseInstances =
     inst (Names ["f", "g", "h"] :: Names (A -> B)),
     inst (Names ["dict"] :: Names (Dict ClassA)),
     inst (Names ["x", "y", "z", "w"] :: Names A),
+    -- Allow up to 4 variables per type by default
+    inst (Use (UpTo 4) :: Use A),
     -- Standard instances
     baseType (Proxy :: Proxy ()),
     baseType (Proxy :: Proxy Int),
@@ -124,6 +136,7 @@ baseInstances =
     -- From Arbitrary to Gen
     inst $ \(Dict :: Dict (Arbitrary A)) -> arbitrary :: Gen A,
     -- Observation functions
+    inst $ \(Dict :: Dict (Ord A)) -> OrdInstance :: OrdInstance A,
     inst (\(Dict :: Dict (Observe A B C)) -> observeObs :: ObserveData C B),
     inst (\(Dict :: Dict (Ord A)) -> observeOrd :: ObserveData A A),
     inst (\(Dict :: Dict (Arbitrary A)) (obs :: ObserveData B C) -> observeFunction obs :: ObserveData (A -> B) C),
@@ -133,10 +146,13 @@ baseInstances =
     -- Needed for typeclass-polymorphic predicates to work currently
     inst (\(Dict :: Dict ClassA) -> Dict :: Dict (Arbitrary (Dict ClassA)))]
 
+data OrdInstance a where
+  OrdInstance :: Ord a => OrdInstance a
+
 -- A token used in the instance list for types that shouldn't generate warnings
 data NoWarnings a = NoWarnings
 
-data SingleUse a = SingleUse
+data Use a = Use VariableUse
 
 instance c => Arbitrary (Dict c) where
   arbitrary = return Dict
@@ -164,6 +180,95 @@ class (Arbitrary test, Ord outcome) => Observe test outcome a | a -> test outcom
 
 instance (Arbitrary a, Observe test outcome b) => Observe (a, test) outcome (a -> b) where
   observe (x, obs) f = observe obs (f x)
+
+instance Observe () Int Int
+instance Observe () Int8 Int8
+instance Observe () Int16 Int16
+instance Observe () Int32 Int32
+instance Observe () Int64 Int64
+instance Observe () Float Float
+instance Observe () Double Double
+instance Observe () Word Word
+instance Observe () Word8 Word8
+instance Observe () Word16 Word16
+instance Observe () Word32 Word32
+instance Observe () Word64 Word64
+instance Observe () Integer Integer
+instance Observe () Char Char
+instance Observe () Bool Bool
+instance Observe () Ordering Ordering
+instance Observe () Void Void
+instance Observe () Unique Unique
+instance Observe () Natural Natural
+instance Observe () DS.All DS.All
+instance Observe () DS.Any DS.Any
+instance Observe () () ()
+instance (Observe xt xo x, Observe yt yo y)
+      => Observe (xt, yt) (xo, yo) (x, y) where
+  observe (xt, yt) (x, y)
+    = (observe xt x, observe yt y)
+instance (Observe xt xo x, Observe yt yo y, Observe zt zo z)
+      => Observe (xt, yt, zt) (xo, yo, zo) (x, y, z) where
+  observe (xt, yt, zt) (x, y, z)
+    = (observe xt x, observe yt y, observe zt z)
+instance (Observe xt xo x, Observe yt yo y, Observe zt zo z, Observe wt wo w)
+      => Observe (xt, yt, zt, wt) (xo, yo, zo, wo) (x, y, z, w) where
+  observe (xt, yt, zt, wt) (x, y, z, w)
+    = (observe xt x, observe yt y, observe zt z, observe wt w)
+instance Observe t p a => Observe t [p] [a] where
+  observe t ps = fmap (observe t) ps
+instance Observe t p a => Observe t (NonEmpty p) (NonEmpty a) where
+  observe t ps = fmap (observe t) ps
+instance Observe t p a => Observe (t, t) (p, p) (Complex a) where
+  observe (t1, t2) (p1 :+ p2) = (observe t1 p1, observe t2 p2)
+instance Observe t p a => Observe (t, t) (p, p) (Ratio a) where
+  observe (t1, t2) (p)
+    = (observe t1 $ numerator p, observe t2 $ denominator p)
+instance Observe t p a => Observe t p (Identity a) where
+  observe t = observe t . runIdentity
+instance Observe t p (f (g a)) => Observe t p (Compose f g a) where
+  observe t = observe t . getCompose
+instance (Observe at ao a, Observe bt bo b)
+      => Observe (at, bt) (Either ao bo) (Either a b) where
+  observe (at, _) (Left a)  = Left $ observe at a
+  observe (_, bt) (Right b) = Right $ observe bt b
+instance Observe t p a => Observe t p (DS.Sum a) where
+  observe t = observe t . DS.getSum
+instance Observe t p a => Observe t p (DS.Product a) where
+  observe t = observe t . DS.getProduct
+instance Observe t p a => Observe t p (DS.First a) where
+  observe t = observe t . DS.getFirst
+instance Observe t p a => Observe t p (DS.Last a) where
+  observe t = observe t . DS.getLast
+instance Observe t p a => Observe t p (DS.Dual a) where
+  observe t = observe t . DS.getDual
+instance Observe t p a => Observe t p (DS.Min a) where
+  observe t = observe t . DS.getMin
+instance Observe t p a => Observe t p (DS.Max a) where
+  observe t = observe t . DS.getMax
+instance Observe t p a => Observe t p (DS.WrappedMonoid a) where
+  observe t = observe t . DS.unwrapMonoid
+instance Observe t p (f a) => Observe t p (DM.Alt f a) where
+  observe t = observe t . DM.getAlt
+instance Observe t p (f a) => Observe t p (DM.Ap f a) where
+  observe t = observe t . DM.getAp
+instance Observe t p a => Observe t (Maybe p) (DM.First a) where
+  observe t = observe t . DM.getFirst
+instance Observe t p a => Observe t (Maybe p) (DM.Last a) where
+  observe t = observe t . DM.getLast
+instance Observe t p a => Observe t (Maybe p) (DS.Option a) where
+  observe t = observe t . DS.getOption
+instance Observe t p a => Observe t (Maybe p) (Maybe a) where
+  observe t (Just a) = Just $ observe t a
+  observe _ Nothing  = Nothing
+instance (Arbitrary a, Observe t p a) => Observe (a, t) p (DS.Endo a) where
+  observe t = observe t . DS.appEndo
+
+
+-- | Like 'Test.QuickCheck.===', but using the 'Observe' typeclass instead of 'Eq'.
+(=~=) :: (Show test, Show outcome, Observe test outcome a) => a -> a -> Property
+a =~= b = property $ \test -> observe test a Test.QuickCheck.=== observe test b
+infix 4 =~=
 
 -- An observation function along with instances.
 -- The parameters are in this order so that we can use findInstance to get at appropriate Wrappers.
@@ -238,6 +343,9 @@ arbitraryObserver def insts = do
 findGenerator :: Type -> Instances -> Type -> Maybe (Gen (Value Identity))
 findGenerator def insts ty =
   bringFunctor <$> (findInstance insts (defaultTo def ty) :: Maybe (Value Gen))
+
+findOrdInstance :: Instances -> Type -> Maybe (Value OrdInstance)
+findOrdInstance insts ty = findInstance insts ty
 
 findObserver :: Instances -> Type -> Maybe (Gen (Value Identity -> Value Ordy))
 findObserver insts ty = do
@@ -464,12 +572,19 @@ predicate name pred = predicateGen name pred inst
     inst :: Dict (Arbitrary (PredicateTestCase a)) -> Gen (PredicateTestCase a)
     inst Dict = arbitrary `suchThat` uncrry pred
 
+-- | How QuickSpec should style equations.
+data PrintStyle
+  = ForHumans
+  | ForQuickCheck
+  deriving (Eq, Ord, Show, Read, Bounded, Enum)
+
 data Config =
   Config {
     cfg_quickCheck :: QuickCheck.Config,
     cfg_twee :: Twee.Config,
     cfg_max_size :: Int,
     cfg_max_commutative_size :: Int,
+    cfg_max_functions :: Int,
     cfg_instances :: Instances,
     -- This represents the constants for a series of runs of QuickSpec.
     -- Each index in cfg_constants represents one run of QuickSpec.
@@ -480,12 +595,14 @@ data Config =
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
     cfg_schemas :: [(String,Prop (Term Constant))]
+    cfg_print_style :: PrintStyle
     }
 
 lens_quickCheck = lens cfg_quickCheck (\x y -> y { cfg_quickCheck = x })
 lens_twee = lens cfg_twee (\x y -> y { cfg_twee = x })
 lens_max_size = lens cfg_max_size (\x y -> y { cfg_max_size = x })
 lens_max_commutative_size = lens cfg_max_commutative_size (\x y -> y { cfg_max_commutative_size = x })
+lens_max_functions = lens cfg_max_functions (\x y -> y { cfg_max_functions = x })
 lens_instances = lens cfg_instances (\x y -> y { cfg_instances = x })
 lens_constants = lens cfg_constants (\x y -> y { cfg_constants = x })
 lens_default_to = lens cfg_default_to (\x y -> y { cfg_default_to = x })
@@ -493,6 +610,7 @@ lens_infer_instance_types = lens cfg_infer_instance_types (\x y -> y { cfg_infer
 lens_background = lens cfg_background (\x y -> y { cfg_background = x })
 lens_print_filter = lens cfg_print_filter (\x y -> y { cfg_print_filter = x })
 lens_schemas = lens cfg_schemas (\x y -> y {cfg_schemas = x})
+lens_print_style = lens cfg_print_style (\x y -> y { cfg_print_style = x })
 
 defaultConfig :: Config
 defaultConfig =
@@ -501,6 +619,7 @@ defaultConfig =
     cfg_twee = Twee.Config { Twee.cfg_max_term_size = minBound, Twee.cfg_max_cp_depth = maxBound },
     cfg_max_size = 7,
     cfg_max_commutative_size = 5,
+    cfg_max_functions = maxBound,
     cfg_instances = mempty,
     cfg_constants = [],
     cfg_default_to = typeRep (Proxy :: Proxy Int),
@@ -508,7 +627,7 @@ defaultConfig =
     cfg_background = [],
     cfg_print_filter = \_ -> True,
     cfg_schemas = []
-    }
+    cfg_print_style = ForHumans }
 
 -- Extra types for the universe that come from in-scope instances.
 instanceTypes :: Instances -> Config -> [Type]
@@ -588,6 +707,7 @@ quickSpec cfg@Config{..} = do
     instances = cfg_instances `mappend` baseInstances
 
     eval = evalHaskell cfg_default_to instances
+    was_observed = isNothing . findOrdInstance instances  -- it was observed if there is no Ord instance directly in scope
 
     present funs prop = do
       norm <- normaliser
@@ -598,9 +718,19 @@ quickSpec cfg@Config{..} = do
         (n :: Int, props) <- get
         put (n+1, prop':props)
         putLine $
-          printf "%3d. %s" n $ show $
-          --printf "%3d. %s%s" n (showSchema $ snd sf)$ show $
-            prettyProp (names instances) prop' <+> disambiguatePropType prop
+          case cfg_print_style of
+            ForHumans ->
+              printf "%3d. %s" n $ show $
+                prettyProp (names instances) prop' <+> disambiguatePropType prop
+            ForQuickCheck ->
+              renderStyle (style {lineLength = 78}) $ nest 2 $
+                prettyPropQC
+                  cfg_default_to
+                  was_observed
+                  n
+                  (names instances)
+                  prop'
+                  <+> disambiguatePropType prop
 
     -- XXX do this during testing
     constraintsOk = memo $ \con ->
@@ -611,6 +741,7 @@ quickSpec cfg@Config{..} = do
     enumerator cons =
       sortTerms measure $
       filterEnumerator (all constraintsOk . funs) $
+      filterEnumerator (\t -> length (usort (funs t)) <= cfg_max_functions) $
       filterEnumerator (\t -> size t + length (conditions t) <= cfg_max_size) $
       enumerateConstants atomic `mappend` enumerateApplications
       where
@@ -618,8 +749,10 @@ quickSpec cfg@Config{..} = do
 
     conditions t = usort [p | f <- funs t, Selector _ p _ <- [classify f]]
 
-    singleUse ty =
-      isJust (findInstance instances ty :: Maybe (Value SingleUse))
+    use ty =
+      ofValue (\(Use x) -> x) $ fromJust $
+      (findInstance instances ty :: Maybe (Value Use))
+
     mainOf n f g = do
       unless (null (f cfg_constants)) $ do
         putLine $ show $ pPrintSignature
@@ -628,11 +761,14 @@ quickSpec cfg@Config{..} = do
       when (n > 0) $ do
         putText (prettyShow (warnings univ instances cfg))
         putLine "== Laws =="
+        when (cfg_print_style == ForQuickCheck) $ do
+          putLine "quickspec_laws :: [(String, Property)]"
+          putLine "quickspec_laws ="
       let pres = if n == 0 then \_ -> return () else present (constantsOf f)
-      QuickSpec.Internal.Explore.quickSpec
-        pres (flip eval) cfg_max_size cfg_max_commutative_size singleUse univ
+      QuickSpec.Internal.Explore.quickSpec pres (flip eval) cfg_max_size cfg_max_commutative_size use univ
         (enumerator (map Fun (constantsOf g)))
       when (n > 0) $ do
+        when (cfg_print_style == ForQuickCheck) $ putLine "  ]"
         putLine ""
 
     main = do

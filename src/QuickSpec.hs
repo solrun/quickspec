@@ -80,7 +80,12 @@ module QuickSpec(
   A, B, C, D, E,
 
   -- * Declaring types
-  monoType, monoTypeObserve, vars, monoTypeWithVars, inst, Observe(..),
+  monoType, monoTypeObserve, Observe(..), inst,
+  vars, monoTypeWithVars, monoTypeObserveWithVars,
+  variableUse, VariableUse(..),
+
+  -- * Declaring types: @TypeApplication@-friendly variants
+  mono, monoObserve, monoVars, monoObserveVars,
 
   -- * Standard signatures
   -- | The \"prelude\": a standard signature containing useful functions
@@ -94,16 +99,23 @@ module QuickSpec(
   type (==>), liftC, instanceOf,
 
   -- * Customising QuickSpec
-  withMaxTermSize, withMaxTests, withMaxTestSize, defaultTo,
+  withMaxTermSize, withMaxTests, withMaxTestSize, withMaxFunctions, defaultTo,
   withPruningDepth, withPruningTermSize, withFixedSeed,
   withInferInstanceTypes, template,
+=======
+  withInferInstanceTypes, withPrintStyle, PrintStyle(..),
+
+  -- * Integrating with QuickCheck
+  (=~=),
+>>>>>>> upstream/master
 
   -- * Re-exported functionality
   Typeable, (:-)(..), Dict(..), Proxy(..), Arbitrary) where
 
 import QuickSpec.Internal
-import QuickSpec.Internal.Haskell(Observe(..))
+import QuickSpec.Internal.Haskell(Observe(..), PrintStyle(..), (=~=))
 import QuickSpec.Internal.Type(A, B, C, D, E)
+import QuickSpec.Internal.Explore.Schemas(VariableUse(..))
 import Data.Typeable
 import Data.Constraint
 import Test.QuickCheck
