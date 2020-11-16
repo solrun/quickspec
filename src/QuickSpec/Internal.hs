@@ -381,14 +381,15 @@ roughSpecWithQuickSpec k s = do
   return ()
 
 -- | A signature containing some default templates for roughSpec
+-- TODO: do we want to change the order?
 defaultTemplates :: Sig
 defaultTemplates = signature
   [
    template "identity" "?F(X) = X"
   ,template "fix-point" "?F(?X) = ?X"
+  ,template "cancel" "?F(?G(X)) = ?F(X)"
   ,template "left-id-elem" "?F(?Y,X) = X"
   ,template "right-id-elem" "?F(X,?Y) = X"
-  ,template "cancel" "?F(?G(X)) = ?F(X)"
   ,template "commutative" "?F(X,Y) = ?F(Y,X)"
   ,template "op-commute" "?F(?G(X)) = ?G(?F(X))"
   ,template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))"
