@@ -52,6 +52,9 @@ roughSpec cfg@Config{..} = do
     univ = conditionalsUniverse (instanceTypes instances cfg) constants
     instances = cfg_instances `mappend` baseInstances
     eval = evalHaskell cfg_default_to instances
+    addPoly aprop = do
+      let insts = typeInstances univ (canonicalise (regeneralise aprop))
+      mapM_ add insts
 
     -- Present property to user and keep for future pruning.
     present funs prop = do
@@ -67,16 +70,21 @@ roughSpec cfg@Config{..} = do
     -- Keep track of property for pruning without presenting it.
     putP funs prop = do
       let prop' = prettyDefinition funs (conditionalise prop)
-      --putLine $ "putting" ++ (prettyShow prop')
+      putLine $ "putting" ++ (prettyShow prop')
       (n :: Int,props) <- get
       put (n,prop':props)
 
     -- Check whether property should be pruned
     provable ((_ :=>: t :=: u), True) = do
+      --putLine $ "attempting to prove" ++ (prettyShow t) ++ (prettyShow u)
       t' <- normalise (oneTypeVar t)
+      --putLine ("lhs" ++ (prettyShow t'))
       u' <- normalise (oneTypeVar u)
+      --putLine ("rhs" ++ (prettyShow u'))
       return (t' == u')
-    provable _ = return False
+    provable _ = do
+      --putLine "not attempting to prove"
+      return False
 
     testProp n current p'@(p,expanded) = do
       -- Background properties are not printed but kept for future pruning
@@ -101,10 +109,6 @@ roughSpec cfg@Config{..} = do
               _ <- addPoly p
                   --putLine (show expanded)
               lift $ pres p
-                where
-                  addPoly aprop = do
-                    let insts = typeInstances univ (canonicalise (regeneralise aprop))
-                    mapM_ add insts
             _ -> return ()
 
       --do
@@ -155,7 +159,7 @@ roughSpec cfg@Config{..} = do
       (n :: Int, props) <- lift get
       lift $ put (n, cfg_background ++ props)
       forM_ cfg_background $ \prop -> do
-        add prop
+        addPoly prop
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
