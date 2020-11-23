@@ -70,7 +70,7 @@ roughSpec cfg@Config{..} = do
     -- Keep track of property for pruning without presenting it.
     putP funs prop = do
       let prop' = prettyDefinition funs (conditionalise prop)
-      putLine $ "putting" ++ (prettyShow prop')
+      --putLine $ "putting" ++ (prettyShow prop')
       (n :: Int,props) <- get
       put (n,prop':props)
 
