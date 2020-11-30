@@ -1,3 +1,6 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
+
 -- A window manager example,
 -- taken from http://donsbot.wordpress.com/2007/05/01/roll-your-own-window-manager-part-1-defining-and-testing-a-model
 
@@ -197,7 +200,9 @@ tinywm = [
 
 templates :: [Sig]
 templates = [
-  template "fix-point/id" "?F(?X) = ?X"
+  template "invariant" "invariant(?X) = True",
+   template "identity" "?F(X) = X"
+  ,template "fix-point" "?F(?X) = ?X"
   ,template "left-id-elem" "?F(?Y,X) = X"
   ,template "right-id-elem" "?F(X,?Y) = X"
   ,template "cancel" "?F(?G(X)) = ?F(X)"
@@ -206,6 +211,12 @@ templates = [
   ,template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))"
   ,template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))"
   ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
-  ,template "invariant" "invariant(?F) = True"
+  ,template "idempotent" "?F(X) = ?F(?F(X))"
+  --,template "invariant" "invariant(?X) = True"
   ]
-main = roughSpecWithQuickSpec 3 (tinywm ++ templates)
+main = do
+  quickSpec tinywm
+  roughSpecDefault tinywm
+  roughSpec $ tinywm ++ templates
+  roughSpecWithQuickSpec 3 $ tinywm ++ templates
+  roughSpecWithQuickSpec 3 $ tinywm ++ [defaultTemplates]
