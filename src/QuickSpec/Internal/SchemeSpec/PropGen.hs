@@ -134,7 +134,7 @@ checkVars vartypes _ = Just vartypes
 -- TODO: add support for toggling expansion
 
 expandTemplate :: Int -> Prop (Term Constant) -> [(Prop (Term Constant), Bool)]
-expandTemplate maxArity p = --nub $ catMaybes $ concatMap (\x -> map (varReplace x) ["X","Y","Z",""]) $
+expandTemplate maxArity p = nub $ catMaybes $ concatMap (\x -> map (varReplace x) ["X","Y","Z",""]) $
   concatMap (partialApp maxArity) $ nestApp p
 
 -- partialApp maxArity p returns all possible expansions of p using partial application
@@ -146,8 +146,9 @@ partialApp maxArity p = nub [foldl partialExpand p c | c <- combos]
 
 -- Replace ?F with ?F X1 X2 ...
 partialExpand :: (Prop (Term Constant), Bool) -> (Int,MetaVar) -> (Prop (Term Constant), Bool)
-partialExpand (p,b) (k,h) |    hole_id h `elem`  ["X","Y","Z"]
-                            || k <= ta = (p, b)
+partialExpand (p,b) (k,h) |    -- hole_id h `elem`  ["X","Y","Z"]
+                            -- ||
+                               k <= ta = (p, b)
                                  where ta = typeArity ht
                                        ht = hole_ty h
 partialExpand (p,_) (k,h) | otherwise = (sprop (partialExpand' hname vnums lh,
@@ -172,7 +173,7 @@ nestApp p = (p, False) : [(appExpand p f, True) | f <- nub $ mvars p]
 -- Replace ?F with ?F1 applied to ?F2
 appExpand :: Prop (Term Constant) -> MetaVar -> Prop (Term Constant)
 -- Assume that metavariable names "X", "Y", and "Z" are meant to represent constants
-appExpand p m | hole_id m `elem` ["X","Y","Z"] = p
+-- appExpand p m | hole_id m `elem` ["X","Y","Z"] = p
 appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
   where h = hole_id m
         (lh,rh) = sides p
@@ -185,7 +186,7 @@ appExpand p m | otherwise =  sprop (appExpand' h lh, appExpand' h rh)
         appExpand' mv (t1 :$: t2) = (appExpand' mv t1 :$: appExpand' mv t2)
         appExpand' _ x = x
 
--- Replace a variable by a hole
+-- Replace a hole with a variable
 varReplace :: (Prop (Term Constant), Bool) -> String -> Maybe (Prop (Term Constant),Bool)
 varReplace (p,b) "" = Just (p,b)
 varReplace (p,b) m | m `elem` (map hole_id $ mvars p) = Just (sprop (replace m vn lh, replace m vn rh),b)
