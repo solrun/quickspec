@@ -8,7 +8,7 @@ import QuickSpec
 import Text.PrettyPrint.HughesPJ hiding (Str)
 import Data.Proxy
 import Data.Constraint
-
+import Data.Time
 deriving instance Typeable Doc
 
 instance Arbitrary Doc where
@@ -48,7 +48,8 @@ nesting d = head [ i | i <- nums, unindented (nest (-i) d) ]
   where
     nums = 0:concat [ [i, -i] | i <- [1..] ]
 
-
+unit :: Doc -> [Doc]
+unit x = [x]
 
 
 
@@ -66,6 +67,7 @@ ppSig = [
     con "length" (length :: [A] -> Int)
     ],
 
+  con "unit" (unit),
   con "empty" empty,
   con "text" text,
   con "nest" nest,
@@ -76,16 +78,35 @@ ppSig = [
   con "hsep" hsep,
   con "vcat" vcat,
   con "sep"  sep,
-  con "fsep" fsep,
+  con "fsep" fsep
 
-  template "fix-point" "?F(?X) = ?X",
-  --template "empty" "?F(?X) = empty",
-  template "left-id-elem" "?F(?G,X) = X",
-  template "right-id-elem" "?F(X,?G) = X",
-  template "commutative" "?F(X,Y) = ?F(Y,X)",
-  template "op-commute" "?F(?G(X)) = ?G(?F(X))",
-  template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))",
-  template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))",
-  template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"]
+  ]
 
-main = roughSpecWithQuickSpec 2 ppSig
+templates = [
+   template "identity" "?F(X) = X"
+  ,template "empty" "?F(?X)=?Y"
+  ,template "fix-point" "?F(?X) = ?X"
+  ,template "left-id-elem" "?F(?Y,X) = X"
+  ,template "right-id-elem" "?F(X,?Y) = X"
+  ,template "cancel" "?F(?G(X)) = ?F(X)"
+  ,template "commutative" "?F(X,Y) = ?F(Y,X)"
+  ,template "op-commute" "?F(?G(X)) = ?G(?F(X))"
+  ,template "2-distributive" "?F(?G(X,Y)) = ?G(?F(X),?F(Y))"
+  ,template "analogy-distributive" "?F(?G(X),?G(Y)) = ?G(?H(X,Y))"
+  ,template "associative-3" "?F(?F(X,Y),Z) = ?F(X,?F(Y,Z))"
+            ]
+
+main = do
+  start <- getCurrentTime
+  roughSpecDefault ppSig
+  rs1Time <- getCurrentTime
+  roughSpec $ ppSig ++ templates
+  rs2Time <- getCurrentTime
+  roughSpecQSDefault ppSig
+  rsqsTime <- getCurrentTime
+  roughSpecWithQuickSpec 3 $ ppSig ++ [defaultTemplates]
+  rsqs2Time <- getCurrentTime
+  print (diffUTCTime rs1Time start)
+  print (diffUTCTime rs2Time rs1Time)
+  print (diffUTCTime rsqsTime rs2Time)
+  print (diffUTCTime rsqs2Time rsqsTime)
