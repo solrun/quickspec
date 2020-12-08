@@ -14,6 +14,7 @@ import Test.QuickCheck.Instances
 import Test.QuickCheck.Poly(OrdA)
 import QuickSpec
 import Numeric.Natural
+import Data.Time
 
 -- ---------------------------------------------------------------------
 -- A data structure for multiple workspaces containing stacks of screens
@@ -194,13 +195,13 @@ tinywm = [
   "insert"  `con` (insert          :: OrdA -> Natural -> T -> T),
   "delete"  `con` (delete          :: OrdA -> T -> T),
   "current" `con` (current         :: T -> Natural),
-  "index"   `con` (index           :: Natural -> T -> [OrdA]),
-  "invariant" `con` (invariant :: T -> Bool)
+  "index"   `con` (index           :: Natural -> T -> [OrdA])
+  --"invariant" `con` (invariant :: T -> Bool)
   ]
 
 templates :: [Sig]
 templates = [
-  template "invariant" "invariant(?X) = True",
+  --template "invariant" "invariant(?X) = True",
    template "identity" "?F(X) = X"
   ,template "fix-point" "?F(?X) = ?X"
   ,template "left-id-elem" "?F(?Y,X) = X"
@@ -214,9 +215,44 @@ templates = [
   ,template "idempotent" "?F(X) = ?F(?F(X))"
   --,template "invariant" "invariant(?X) = True"
   ]
+
+prop_current_empty (n :: Natural) = current x == 0
+  where x = empty n :: T
+prop_view_empty m n = n > 0 ==> view m y == x
+  where x = empty 1 :: T
+        y = empty n :: T
+prop_rotate_empty o n = n > 0 ==> rotate o x == x
+  where x = empty n :: T
+prop_shift_empty m n = n > 0 ==> shift m x == x
+  where x = empty n :: T
+prop_delete_empty n (x :: T) = n > 0 ==> delete x (empty n) == empty n
+
+prop_shift_idempotent n (x::T) = shift n x == shift n (shift n x)
+
 main = do
+  --quickCheck prop_current_empty
+  --quickCheck prop_view_empty
+  --quickCheck prop_rotate_empty
+  --quickCheck prop_shift_empty
+  --quickCheck prop_delete_empty
+  start <- getCurrentTime
   quickSpec tinywm
+  qsTime <- getCurrentTime
   roughSpecDefault tinywm
+  rs1Time <- getCurrentTime
   roughSpec $ tinywm ++ templates
-  roughSpecWithQuickSpec 3 $ tinywm ++ templates
+  rs2Time <- getCurrentTime
+  -- quickCheck prop_shift_idempotent
   roughSpecWithQuickSpec 3 $ tinywm ++ [defaultTemplates]
+  rsqs1Time <- getCurrentTime
+  roughSpecWithQuickSpec 3 $ tinywm ++ templates
+  rsqs2Time <- getCurrentTime
+  print (diffUTCTime qsTime start)
+  print (diffUTCTime rs1Time qsTime)
+  print (diffUTCTime rs2Time rs1Time)
+  print (diffUTCTime rsqs1Time rs2Time)
+  print (diffUTCTime rsqs2Time rsqs1Time)
+
+
+
+

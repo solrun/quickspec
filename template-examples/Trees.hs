@@ -1,11 +1,13 @@
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables, TypeOperators #-}
 import QuickSpec
+import QuickSpec.Internal(quickSpecResult,makeConfig,addBackground)
 import Test.QuickCheck
 import GHC.Generics
 import qualified Data.List as L
 import Test.QuickCheck.Poly(OrdA(..))
 import Data.Function(on)
 import Data.Ord(comparing)
+import Data.Time
 
 data BST k v = Leaf | Branch (BST k v ) k v (BST k v )
   deriving (Eq, Show , Generic, Typeable)
@@ -88,13 +90,37 @@ treeSig =  [
       con "findList" (L.lookup :: OrdA -> [(OrdA,OrdA)] -> Maybe OrdA)
              ]
 
-  ,template "toList-0" "toList(?X) = ?Y"
+  --,template "id" "?F(X)=X"
+  --,template "fixpoint" "?F(?X) = ?X"
   ,template "toList-2" "?F(Y,toList(X)) = ?G(Y,X)"
+  ,template "toList-0" "toList(?A) = ?B"
   ,template "toList-distributive" "toList(?H(X,Y)) = ?F(toList(X),toList(Y))"
+  ]
+bgSig =
+  [
+      con "toList" (toList :: BST OrdA OrdA -> [(OrdA,OrdA)]),
+      con "keys"   (keys :: BST OrdA OrdA -> [OrdA]),
+      con "sort" (L.sort     :: [(OrdA,OrdA)] -> [(OrdA,OrdA)]),
+      con "insertList" (insertList :: (OrdA,OrdA) -> [(OrdA,OrdA)] -> [(OrdA,OrdA)]),
+      con "[]" ([] :: [(OrdA,OrdA)]),
+      con "deleteKeyList" (deleteKey :: OrdA -> [(OrdA,OrdA)] -> [(OrdA,OrdA)]),
+      con "unionList" (unionLists :: [(OrdA,OrdA)] -> [(OrdA,OrdA)] -> [(OrdA,OrdA)]),
+      con "findList" (L.lookup :: OrdA -> [(OrdA,OrdA)] -> Maybe OrdA)
   ]
 
 main = do
+  start <- getCurrentTime
   roughSpec treeSig
+  rsTime <- getCurrentTime
+  --quickSpec treeSig
+  qsTime <- getCurrentTime
+  qsbgProps <- quickSpecResult $ bgSig ++ [withMaxTermSize 3]
+  qsProps <- quickSpecResult $ treeSig ++ [withMaxTermSize 3]
+  roughSpec $ [addBackground $ qsbgProps ++ qsProps] ++ treeSig
+  comboTime <- getCurrentTime
+  print (diffUTCTime rsTime start)
+  print (diffUTCTime qsTime rsTime)
+  print (diffUTCTime comboTime qsTime)
 
 
 
@@ -118,11 +144,3 @@ main = do
 
 
 
-
-
-
-
-
---,template "toList-0" "toList(?X) = ?Y"
---,template "toList-2" "?F(Y,toList(X)) = ?G(Y,X)"
---,template "toList-distributive" "toList(?H(X,Y)) = ?F(toList(X),toList(Y))"
