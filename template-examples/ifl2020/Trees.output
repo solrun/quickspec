@@ -1,0 +1,157 @@
+== Functions ==
+       toList :: BST OrdA OrdA -> [(OrdA, OrdA)]
+         keys :: BST OrdA OrdA -> [OrdA]
+         sort :: [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+   insertList :: (OrdA, OrdA) -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+           [] :: [(OrdA, OrdA)]
+deleteKeyList :: OrdA -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+    unionList :: [(OrdA, OrdA)] -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+     findList :: OrdA -> [(OrdA, OrdA)] -> Maybe OrdA
+
+== Functions ==
+   nil :: BST OrdA OrdA
+insert :: (OrdA, OrdA) -> BST OrdA OrdA -> BST OrdA OrdA
+delete :: OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+ union :: BST OrdA OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+  find :: OrdA -> BST OrdA OrdA -> Maybe OrdA
+
+== Laws ==
+Searching for toList-2 properties...
+  1. find x t = findList x (toList t)
+  2. insertList x (toList t) = toList (insert x t)
+  3. deleteKeyList x (toList t) = toList (delete x t)
+Searching for toList-0 properties...
+  4. toList nil = []
+  5. toList (delete x nil) = []
+  6. toList nil = sort []
+Searching for toList-distributive properties...
+  7. toList (union t t1) = sort (unionList (toList t) (toList t1))
+
+== Functions ==
+       toList :: BST OrdA OrdA -> [(OrdA, OrdA)]
+         keys :: BST OrdA OrdA -> [OrdA]
+         sort :: [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+   insertList :: (OrdA, OrdA) -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+           [] :: [(OrdA, OrdA)]
+deleteKeyList :: OrdA -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+    unionList :: [(OrdA, OrdA)] -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+     findList :: OrdA -> [(OrdA, OrdA)] -> Maybe OrdA
+
+== Functions ==
+   nil :: BST OrdA OrdA
+insert :: (OrdA, OrdA) -> BST OrdA OrdA -> BST OrdA OrdA
+delete :: OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+ union :: BST OrdA OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+  find :: OrdA -> BST OrdA OrdA -> Maybe OrdA
+
+== Laws ==
+  1. toList nil = []
+  2. union t t = t
+  3. find x nil = find y nil
+  4. delete x nil = nil
+  5. findList x [] = find x nil
+  6. union t nil = t
+  7. union nil t = t
+  8. keys (union t t1) = keys (union t1 t)
+  9. find x t = findList x (toList t)
+ 10. deleteKeyList x (toList t) = toList (delete x t)
+ 11. insertList x (toList t) = toList (insert x t)
+ 12. delete x (delete y t) = delete y (delete x t)
+ 13. delete x (delete x t) = delete x t
+ 14. union t (delete x t) = t
+ 15. union t (union t t1) = union t t1
+ 16. union t (union t1 t) = union t t1
+ 17. union (delete x t) t = t
+ 18. union (union t t1) t2 = union t (union t1 t2)
+ 19. union (insert x t) t = insert x t
+ 20. insert x (union t t1) = union (insert x t) t1
+ 21. keys (delete x (union t t1)) = keys (delete x (union t1 t))
+ 22. sort (unionList (toList t) (toList t1)) = toList (union t t1)
+ 23. union (delete x t) (delete x t1) = delete x (union t t1)
+ 24. union (delete x t) (delete y t) = union (delete y t) (delete x t)
+ 25. find x (union t (delete x t1)) = find x t
+ 26. find x (union (delete x t) t1) = find x t1
+ 27. union (delete x (union t t1)) t = union t (delete x t1)
+ 28. union (delete x (union t t1)) t1 = union (delete x t) t1
+
+== Functions ==
+       toList :: BST OrdA OrdA -> [(OrdA, OrdA)]
+         keys :: BST OrdA OrdA -> [OrdA]
+         sort :: [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+   insertList :: (OrdA, OrdA) -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+           [] :: [(OrdA, OrdA)]
+deleteKeyList :: OrdA -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+    unionList :: [(OrdA, OrdA)] -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+     findList :: OrdA -> [(OrdA, OrdA)] -> Maybe OrdA
+
+WARNING: The following types have no 'Arbitrary' instance declared.
+You will not get any variables of the following types:
+  BST OrdA OrdA
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  BST OrdA OrdA
+
+== Laws ==
+  1. sort [] = []
+  2. unionList xs xs = xs
+  3. findList x [] = findList y []
+  4. deleteKeyList x [] = []
+  5. unionList xs [] = xs
+  6. sort (sort xs) = sort xs
+
+== Functions ==
+       toList :: BST OrdA OrdA -> [(OrdA, OrdA)]
+         keys :: BST OrdA OrdA -> [OrdA]
+         sort :: [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+   insertList :: (OrdA, OrdA) -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+           [] :: [(OrdA, OrdA)]
+deleteKeyList :: OrdA -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+    unionList :: [(OrdA, OrdA)] -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+     findList :: OrdA -> [(OrdA, OrdA)] -> Maybe OrdA
+
+== Functions ==
+   nil :: BST OrdA OrdA
+insert :: (OrdA, OrdA) -> BST OrdA OrdA -> BST OrdA OrdA
+delete :: OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+ union :: BST OrdA OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+  find :: OrdA -> BST OrdA OrdA -> Maybe OrdA
+
+== Laws ==
+  1. toList nil = []
+  2. union t t = t
+  3. find x nil = find y nil
+  4. delete x nil = nil
+  5. findList x [] = find x nil
+  6. union t nil = t
+  7. union nil t = t
+
+== Functions ==
+       toList :: BST OrdA OrdA -> [(OrdA, OrdA)]
+         keys :: BST OrdA OrdA -> [OrdA]
+         sort :: [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+   insertList :: (OrdA, OrdA) -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+           [] :: [(OrdA, OrdA)]
+deleteKeyList :: OrdA -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+    unionList :: [(OrdA, OrdA)] -> [(OrdA, OrdA)] -> [(OrdA, OrdA)]
+     findList :: OrdA -> [(OrdA, OrdA)] -> Maybe OrdA
+
+== Functions ==
+   nil :: BST OrdA OrdA
+insert :: (OrdA, OrdA) -> BST OrdA OrdA -> BST OrdA OrdA
+delete :: OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+ union :: BST OrdA OrdA -> BST OrdA OrdA -> BST OrdA OrdA
+  find :: OrdA -> BST OrdA OrdA -> Maybe OrdA
+
+== Laws ==
+Searching for toList-2 properties...
+  1. find x t = findList x (toList t)
+  2. insertList x (toList t) = toList (insert x t)
+  3. deleteKeyList x (toList t) = toList (delete x t)
+Searching for toList-0 properties...
+Searching for toList-distributive properties...
+  4. toList (union t t1) = sort (unionList (toList t) (toList t1))
+
+0.303456394s
+10.455856917s
+0.780230997s

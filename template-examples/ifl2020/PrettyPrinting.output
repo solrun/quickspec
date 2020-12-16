@@ -1,0 +1,426 @@
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+  1. empty = fsep []
+  2. empty = hcat []
+  3. empty = hsep []
+  4. empty = sep []
+  5. empty = vcat []
+  6. nest x empty = empty
+  7. nest 0 x = x
+  8. x $$ empty = x
+  9. empty $$ x = x
+ 10. x <+> empty = x
+ 11. empty <+> x = x
+ 12. x <> empty = x
+ 13. empty <> x = x
+ 14. length (unit x) = length (unit y)
+ 15. fsep (unit x) = x
+ 16. hcat (unit x) = x
+ 17. hsep (unit x) = x
+ 18. sep (unit x) = x
+ 19. vcat (unit x) = x
+ 20. x <> text [] = x
+ 21. nest x (nest y z) = nest y (nest x z)
+ 22. nest (x + y) z = nest x (nest y z)
+ 23. (x $$ y) $$ z = x $$ (y $$ z)
+ 24. x <+> nest y z = x <+> z
+ 25. (x $$ y) <+> z = x $$ (y <+> z)
+ 26. (x $$ y) <> z = x $$ (y <> z)
+ 27. vcat xs $$ vcat ys = vcat (xs ++ ys)
+ 28. hcat (xs ++ unit x) = hcat xs <> x
+ 29. hcat (unit x ++ xs) = x <> hcat xs
+ 30. hsep (xs ++ unit x) = hsep xs <+> x
+ 31. hsep (unit x ++ xs) = x <+> hsep xs
+ 32. fsep (xs ++ unit empty) = fsep xs
+ 33. fsep (unit empty ++ xs) = fsep xs
+ 34. sep (xs ++ unit empty) = sep xs
+ 35. sep (unit empty ++ xs) = sep xs
+ 36. sep (unit x ++ unit y) = fsep (unit x ++ unit y)
+ 37. fsep (xs ++ unit (x $$ x)) = fsep xs $$ (x $$ x)
+ 38. fsep (unit (x $$ x) ++ xs) = (x $$ x) $$ fsep xs
+ 39. sep (xs ++ unit (x $$ y)) = vcat xs $$ (x $$ y)
+ 40. fsep (xs ++ (unit empty ++ ys)) = fsep (xs ++ ys)
+ 41. hcat (xs ++ (unit empty ++ ys)) = hcat (xs ++ ys)
+ 42. hsep (xs ++ (unit empty ++ ys)) = hsep (xs ++ ys)
+ 43. hcat (xs ++ (unit (hcat ys) ++ zs)) = hcat (xs ++ (ys ++ zs))
+ 44. hsep (xs ++ (unit (hsep ys) ++ zs)) = hsep (xs ++ (ys ++ zs))
+ 45. fsep (xs ++ unit (x $$ (y $$ z))) = fsep xs $$ (x $$ (y $$ z))
+ 46. fsep (xs ++ (unit (x $$ x) ++ ys)) = fsep xs $$ ((x $$ x) $$ fsep ys)
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+Searching for identity properties...
+  1. hcat (unit x) = x
+  2. hsep (unit x) = x
+  3. vcat (unit x) = x
+  4. sep (unit x) = x
+  5. fsep (unit x) = x
+Searching for fix-point properties...
+  6. nest x empty = empty
+  7. nest x (hcat []) = hcat []
+  8. nest x (hsep []) = hsep []
+  9. nest x (vcat []) = vcat []
+ 10. nest x (sep []) = sep []
+ 11. nest x (fsep []) = fsep []
+Searching for left-id-elem properties...
+ 12. nest 0 x = x
+ 13. empty <> x = x
+ 14. empty <+> x = x
+ 15. empty $$ x = x
+ 16. hcat [] <> x = x
+ 17. hsep [] <> x = x
+ 18. vcat [] <> x = x
+ 19. sep [] <> x = x
+ 20. fsep [] <> x = x
+ 21. hcat [] <+> x = x
+ 22. hsep [] <+> x = x
+ 23. vcat [] <+> x = x
+ 24. sep [] <+> x = x
+ 25. fsep [] <+> x = x
+ 26. hcat [] $$ x = x
+ 27. hsep [] $$ x = x
+ 28. vcat [] $$ x = x
+ 29. sep [] $$ x = x
+ 30. fsep [] $$ x = x
+Searching for right-id-elem properties...
+ 31. x <> empty = x
+ 32. x <+> empty = x
+ 33. x $$ empty = x
+ 34. x <> text [] = x
+Searching for cancel properties...
+ 35. length (unit (nest x y)) = length (unit y)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 36. nest x (nest y z) = nest y (nest x z)
+Searching for 2-distributive properties...
+ 37. nest x (y <> z) = nest x y <> nest x z
+ 38. nest x (y <+> z) = nest x y <+> nest x z
+ 39. nest x (y $$ z) = nest x y $$ nest x z
+Searching for analogy-distributive properties...
+ 40. text xs <> text ys = text (xs ++ ys)
+ 41. hcat xs <> hcat ys = hcat (xs ++ ys)
+ 42. hsep xs <+> hsep ys = hsep (xs ++ ys)
+ 43. vcat xs $$ vcat ys = vcat (xs ++ ys)
+Searching for associative-3 properties...
+ 44. (x <> y) <> z = x <> (y <> z)
+ 45. (x <+> y) <+> z = x <+> (y <+> z)
+ 46. (x $$ y) $$ z = x $$ (y $$ z)
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+Searching for identity properties...
+  1. hcat (unit x) = x
+  2. hsep (unit x) = x
+  3. vcat (unit x) = x
+  4. sep (unit x) = x
+  5. fsep (unit x) = x
+Searching for empty properties...
+  6. empty = hcat []
+  7. empty = hsep []
+  8. empty = vcat []
+  9. empty = sep []
+ 10. empty = fsep []
+ 11. nest x empty = empty
+ 12. nest 0 = (<>) empty
+ 13. nest 0 = (<+>) empty
+ 14. nest 0 = ($$) empty
+ 15. (<>) empty = (<+>) empty
+ 16. (<>) empty = ($$) empty
+ 17. (<+>) empty = ($$) empty
+ 18. length (unit x) = length (unit y)
+Searching for fix-point properties...
+Searching for left-id-elem properties...
+ 19. nest 0 x = x
+ 20. empty <> x = x
+ 21. empty <+> x = x
+ 22. empty $$ x = x
+Searching for right-id-elem properties...
+ 23. x <> empty = x
+ 24. x <+> empty = x
+ 25. x $$ empty = x
+ 26. x <> text [] = x
+Searching for cancel properties...
+Searching for commutative properties...
+Searching for op-commute properties...
+ 27. nest x (nest y z) = nest y (nest x z)
+Searching for 2-distributive properties...
+ 28. nest x (y <> z) = nest x y <> nest x z
+ 29. nest x (y <+> z) = nest x y <+> nest x z
+ 30. nest x (y $$ z) = nest x y $$ nest x z
+Searching for analogy-distributive properties...
+ 31. text xs <> text ys = text (xs ++ ys)
+ 32. hcat xs <> hcat ys = hcat (xs ++ ys)
+ 33. hsep xs <+> hsep ys = hsep (xs ++ ys)
+ 34. vcat xs $$ vcat ys = vcat (xs ++ ys)
+Searching for associative-3 properties...
+ 35. (x <> y) <> z = x <> (y <> z)
+ 36. (x <+> y) <+> z = x <+> (y <+> z)
+ 37. (x $$ y) $$ z = x $$ (y $$ z)
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+  1. empty = fsep []
+  2. empty = hcat []
+  3. empty = hsep []
+  4. empty = sep []
+  5. empty = vcat []
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+Searching for identity properties...
+  1. hcat (unit x) = x
+  2. hsep (unit x) = x
+  3. vcat (unit x) = x
+  4. sep (unit x) = x
+  5. fsep (unit x) = x
+Searching for fix-point properties...
+  6. nest x empty = empty
+Searching for left-id-elem properties...
+  7. nest 0 x = x
+  8. empty <> x = x
+  9. empty <+> x = x
+ 10. empty $$ x = x
+Searching for right-id-elem properties...
+ 11. x <> empty = x
+ 12. x <+> empty = x
+ 13. x $$ empty = x
+ 14. x <> text [] = x
+Searching for cancel properties...
+ 15. length (unit (nest x y)) = length (unit y)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 16. nest x (nest y z) = nest y (nest x z)
+Searching for 2-distributive properties...
+ 17. nest x (y <> z) = nest x y <> nest x z
+ 18. nest x (y <+> z) = nest x y <+> nest x z
+ 19. nest x (y $$ z) = nest x y $$ nest x z
+Searching for analogy-distributive properties...
+ 20. text xs <> text ys = text (xs ++ ys)
+ 21. hcat xs <> hcat ys = hcat (xs ++ ys)
+ 22. hsep xs <+> hsep ys = hsep (xs ++ ys)
+ 23. vcat xs $$ vcat ys = vcat (xs ++ ys)
+Searching for associative-3 properties...
+ 24. (x <> y) <> z = x <> (y <> z)
+ 25. (x <+> y) <+> z = x <+> (y <+> z)
+ 26. (x $$ y) $$ z = x $$ (y $$ z)
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+  1. empty = fsep []
+  2. empty = hcat []
+  3. empty = hsep []
+  4. empty = sep []
+  5. empty = vcat []
+  6. nest x empty = empty
+  7. nest 0 x = x
+  8. x $$ empty = x
+  9. empty $$ x = x
+ 10. x <+> empty = x
+ 11. empty <+> x = x
+ 12. x <> empty = x
+ 13. empty <> x = x
+ 14. length (unit x) = length (unit y)
+ 15. fsep (unit x) = x
+ 16. hcat (unit x) = x
+ 17. hsep (unit x) = x
+ 18. sep (unit x) = x
+ 19. vcat (unit x) = x
+
+== Functions ==
+    [] :: [a]
+  (++) :: [a] -> [a] -> [a]
+     0 :: Int
+   (+) :: Int -> Int -> Int
+length :: [a] -> Int
+
+== Functions ==
+ unit :: Doc -> [Doc]
+empty :: Doc
+ text :: [Char] -> Doc
+ nest :: Int -> Doc -> Doc
+ (<>) :: Doc -> Doc -> Doc
+(<+>) :: Doc -> Doc -> Doc
+ ($$) :: Doc -> Doc -> Doc
+ hcat :: [Doc] -> Doc
+ hsep :: [Doc] -> Doc
+ vcat :: [Doc] -> Doc
+  sep :: [Doc] -> Doc
+ fsep :: [Doc] -> Doc
+
+WARNING: The following types have no 'Ord' or 'Observe' instance declared.
+You will not get any equations about the following types:
+  [Doc]
+
+== Laws ==
+Searching for identity properties...
+Searching for fix-point properties...
+Searching for left-id-elem properties...
+Searching for right-id-elem properties...
+  1. x <> text [] = x
+Searching for cancel properties...
+Searching for commutative properties...
+Searching for op-commute properties...
+  2. nest x (nest y z) = nest y (nest x z)
+Searching for 2-distributive properties...
+  3. nest x (y <> z) = nest x y <> nest x z
+  4. nest x (y <+> z) = nest x y <+> nest x z
+  5. nest x (y $$ z) = nest x y $$ nest x z
+Searching for analogy-distributive properties...
+  6. text xs <> text ys = text (xs ++ ys)
+  7. hcat xs <> hcat ys = hcat (xs ++ ys)
+  8. hsep xs <+> hsep ys = hsep (xs ++ ys)
+  9. vcat xs $$ vcat ys = vcat (xs ++ ys)
+Searching for associative-3 properties...
+ 10. (x <> y) <> z = x <> (y <> z)
+ 11. (x <+> y) <+> z = x <+> (y <+> z)
+ 12. (x $$ y) $$ z = x $$ (y $$ z)
+
+100.088094596s
+15.679230153s
+28.073171431s
+15.322305597s
+16.24581529s

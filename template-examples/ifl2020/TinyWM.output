@@ -1,0 +1,469 @@
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+  1. invariant s
+  2. rotate EQ s = s
+  3. current (empty x) = 0
+  4. current (shift x s) = current s
+  5. current (rotate o s) = current s
+  6. current (delete x s) = current s
+  7. current (push x s) = current s
+  8. peek (push x s) = x
+  9. shift (current s) s = s
+ 10. view (current s) s = s
+ 11. current (view 0 s) = 0
+ 12. shift x (empty 1) = empty 1
+ 13. view x (empty 1) = empty 1
+ 14. rotate o (empty 1) = empty 1
+ 15. delete x (empty 1) = empty 1
+ 16. index 0 (empty 1) = []
+ 17. current (insert x y s) = current s
+ 18. insert x y s = shift y (push x s)
+ 19. view x (view x s) = view x s
+ 20. rotate o (rotate o' s) = rotate o' (rotate o s)
+ 21. delete x (view y s) = view y (delete x s)
+ 22. delete x (delete y s) = delete y (delete x s)
+ 23. delete x (delete x s) = delete x s
+ 24. delete x (push x s) = delete x s
+ 25. push x (delete x s) = push x s
+ 26. index 0 (view x s) = index 0 s
+ 27. view 0 (view x s) = view 0 s
+ 28. view 1 (view x s) = view 1 s
+ 29. rotate GT (rotate LT s) = s
+ 30. insert x 1 (empty 1) = empty 1
+ 31. delete x (insert x y s) = delete x s
+ 32. view x (insert y z s) = insert y z (view x s)
+ 33. index (current s) (view x s) = index (current s) s
+ 34. view (current s) (view x s) = s
+ 35. index 0 (insert x 1 s) = index 0 (delete x s)
+ 36. current (view x (shift y s)) = current (view x s)
+ 37. current (view x (rotate o s)) = current (view x s)
+ 38. index x (empty (x + 1)) = []
+ 39. shift x (empty (y + 1)) = empty (y + 1)
+ 40. rotate o (empty (x + 1)) = empty (x + 1)
+ 41. rotate o (push x (empty 1)) = push x (empty 1)
+ 42. delete x (empty (y + 1)) = empty (y + 1)
+ 43. index 0 (empty (x + 1)) = []
+ 44. index 0 (push x (empty 1)) = x : []
+ 45. insert x (y + y) (empty 1) = insert x y (empty 1)
+ 46. insert x (y + 1) (empty 1) = empty 1
+ 47. view x (shift y (view x s)) = shift y (view x s)
+ 48. view x (view y (view x s)) = view x (view y s)
+ 49. view x (view (x + y) s) = view x s
+ 50. view x (rotate o (view x s)) = rotate o (view x s)
+ 51. view x (push y (view x s)) = push y (view x s)
+ 52. delete x (shift y (delete x s)) = shift y (delete x s)
+ 53. delete x (rotate o (delete x s)) = rotate o (delete x s)
+ 54. delete x (push y (delete x s)) = delete x (push y s)
+ 55. index 0 (shift (x + x) s) = index 0 (shift x s)
+ 56. shift x (insert y z (empty 1)) = insert y (x + z) (empty 1)
+ 57. rotate o (insert x y (empty 1)) = insert x y (empty 1)
+ 58. x : index 0 (delete x s) = index 0 (insert x 0 s)
+ 59. delete x (rotate GT (push x s)) = delete x s
+ 60. delete x (rotate LT (push x s)) = rotate LT (delete x s)
+ 61. index 0 (shift (x + 1) s) = index 0 (shift 1 s)
+ 62. shift 1 (shift x (view 1 s)) = shift x (shift 1 (view 1 s))
+ 63. insert x 1 (push y (empty 1)) = delete x (push y (empty 1))
+ 64. current (view x (empty (x + 1))) = x
+ 65. current (view (current (view 1 s)) s2) = current (view (current (view 1 s2)) s)
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+Searching for identity properties...
+Searching for fix-point properties...
+  1. current (empty 0) = 0
+  2. view x (empty 1) = empty 1
+  3. rotate o (empty 1) = empty 1
+  4. shift x (empty 1) = empty 1
+  5. delete x (empty 1) = empty 1
+Searching for left-id-elem properties...
+  6. rotate EQ s = s
+  7. invariant s && x = x
+  8. current (empty x) + y = y
+Searching for right-id-elem properties...
+  9. peek (push x s) = x
+Searching for cancel properties...
+ 10. current (rotate o s) = current s
+ 11. current (push x s) = current s
+ 12. current (shift x s) = current s
+ 13. current (delete x s) = current s
+ 14. current (insert x y s) = current s
+ 15. current (view x (rotate o s)) = current (view x s)
+ 16. current (view x (push y s)) = current (view x s)
+ 17. current (view x (shift y s)) = current (view x s)
+ 18. current (view x (delete y s)) = current (view x s)
+ 19. current (view x (insert y z s)) = current (view x s)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 20. view x (delete y s) = delete y (view x s)
+ 21. rotate o (rotate o' s) = rotate o' (rotate o s)
+ 22. delete x (delete y s) = delete y (delete x s)
+ 23. view x (insert y z s) = insert y z (view x s)
+ 24. shift x (push y (view z s)) = view z (shift x (push y s))
+Searching for 2-distributive properties...
+Searching for analogy-distributive properties...
+Searching for associative-3 properties...
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+Searching for identity properties...
+Searching for fix-point properties...
+  1. current (empty 0) = 0
+  2. view x (empty 1) = empty 1
+  3. rotate o (empty 1) = empty 1
+  4. shift x (empty 1) = empty 1
+  5. delete x (empty 1) = empty 1
+Searching for left-id-elem properties...
+  6. rotate EQ s = s
+  7. invariant s && x = x
+  8. current (empty x) + y = y
+Searching for right-id-elem properties...
+  9. peek (push x s) = x
+Searching for cancel properties...
+ 10. current (rotate o s) = current s
+ 11. current (push x s) = current s
+ 12. current (shift x s) = current s
+ 13. current (delete x s) = current s
+ 14. current (insert x y s) = current s
+ 15. current (view x (rotate o s)) = current (view x s)
+ 16. current (view x (push y s)) = current (view x s)
+ 17. current (view x (shift y s)) = current (view x s)
+ 18. current (view x (delete y s)) = current (view x s)
+ 19. current (view x (insert y z s)) = current (view x s)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 20. view x (delete y s) = delete y (view x s)
+ 21. rotate o (rotate o' s) = rotate o' (rotate o s)
+ 22. delete x (delete y s) = delete y (delete x s)
+ 23. view x (insert y z s) = insert y z (view x s)
+ 24. shift x (push y (view z s)) = view z (shift x (push y s))
+Searching for 2-distributive properties...
+Searching for analogy-distributive properties...
+Searching for associative-3 properties...
+Searching for idempotent properties...
+ 25. view x s = view x (view x s)
+ 26. push x s = push x (push x s)
+ 27. delete x s = delete x (delete x s)
+ 28. insert x y s = insert x y (insert x y s)
+ 29. view x (view y s) = view x (view y (view x (view y s)))
+ 30. push x (view y s) = push x (view y (push x (view y s)))
+ 31. push x (push y s) = push x (push y (push x (push y s)))
+ 32. push x (shift y s) = push x (shift y (push x (shift y s)))
+ 33. push x (delete y s) = push x (delete y (push x (delete y s)))
+ 34. shift x (push y s) = shift x (push y (shift x (push y s)))
+ 35. delete x (push y s) = delete x (push y (delete x (push y s)))
+ 36. push x (insert y z s) = push x (insert y z (push x (insert y z s)))
+ 37. delete x (insert y z s) = delete x (insert y z (delete x (insert y z s)))
+ 38. insert x y (push z s) = insert x y (push z (insert x y (push z s)))
+ 39. insert x y (delete z s) = insert x y (delete z (insert x y (delete z s)))
+ 40. insert x y (insert z w s) = insert x y (insert z w (insert x y (insert z w s)))
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+  1. invariant s
+  2. rotate EQ s = s
+  3. current (empty x) = 0
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+Searching for identity properties...
+Searching for fix-point properties...
+  1. view x (empty 1) = empty 1
+  2. rotate o (empty 1) = empty 1
+  3. shift x (empty 1) = empty 1
+  4. delete x (empty 1) = empty 1
+Searching for left-id-elem properties...
+Searching for right-id-elem properties...
+  5. peek (push x s) = x
+Searching for cancel properties...
+  6. current (rotate o s) = current s
+  7. current (push x s) = current s
+  8. current (shift x s) = current s
+  9. current (delete x s) = current s
+ 10. current (insert x y s) = current s
+ 11. current (view x (rotate o s)) = current (view x s)
+ 12. current (view x (push y s)) = current (view x s)
+ 13. current (view x (shift y s)) = current (view x s)
+ 14. current (view x (delete y s)) = current (view x s)
+ 15. current (view x (insert y z s)) = current (view x s)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 16. view x (delete y s) = delete y (view x s)
+ 17. rotate o (rotate o' s) = rotate o' (rotate o s)
+ 18. delete x (delete y s) = delete y (delete x s)
+ 19. view x (insert y z s) = insert y z (view x s)
+ 20. shift x (push y (view z s)) = view z (shift x (push y s))
+Searching for 2-distributive properties...
+Searching for analogy-distributive properties...
+Searching for associative-3 properties...
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+  1. invariant s
+  2. rotate EQ s = s
+  3. current (empty x) = 0
+
+== Functions ==
+ (||) :: Bool -> Bool -> Bool
+ (&&) :: Bool -> Bool -> Bool
+  not :: Bool -> Bool
+ True :: Bool
+False :: Bool
+    0 :: Int
+    1 :: Int
+   [] :: [a]
+  (:) :: a -> [a] -> [a]
+ (++) :: [a] -> [a] -> [a]
+    0 :: Natural
+    1 :: Natural
+  (+) :: Natural -> Natural -> Natural
+
+== Functions ==
+       LT :: Ordering
+       GT :: Ordering
+       EQ :: Ordering
+    empty :: Natural -> StackSet OrdA
+     view :: Natural -> StackSet OrdA -> StackSet OrdA
+     peek :: StackSet OrdA -> OrdA
+   rotate :: Ordering -> StackSet OrdA -> StackSet OrdA
+     push :: OrdA -> StackSet OrdA -> StackSet OrdA
+    shift :: Natural -> StackSet OrdA -> StackSet OrdA
+   insert :: OrdA -> Natural -> StackSet OrdA -> StackSet OrdA
+   delete :: OrdA -> StackSet OrdA -> StackSet OrdA
+  current :: StackSet OrdA -> Natural
+    index :: Natural -> StackSet OrdA -> [OrdA]
+invariant :: StackSet OrdA -> Bool
+
+== Laws ==
+Searching for identity properties...
+Searching for fix-point properties...
+  1. view x (empty 1) = empty 1
+  2. rotate o (empty 1) = empty 1
+  3. shift x (empty 1) = empty 1
+  4. delete x (empty 1) = empty 1
+Searching for left-id-elem properties...
+Searching for right-id-elem properties...
+  5. peek (push x s) = x
+Searching for cancel properties...
+  6. current (rotate o s) = current s
+  7. current (push x s) = current s
+  8. current (shift x s) = current s
+  9. current (delete x s) = current s
+ 10. current (insert x y s) = current s
+ 11. current (view x (rotate o s)) = current (view x s)
+ 12. current (view x (push y s)) = current (view x s)
+ 13. current (view x (shift y s)) = current (view x s)
+ 14. current (view x (delete y s)) = current (view x s)
+ 15. current (view x (insert y z s)) = current (view x s)
+Searching for commutative properties...
+Searching for op-commute properties...
+ 16. view x (delete y s) = delete y (view x s)
+ 17. rotate o (rotate o' s) = rotate o' (rotate o s)
+ 18. delete x (delete y s) = delete y (delete x s)
+ 19. view x (insert y z s) = insert y z (view x s)
+ 20. shift x (push y (view z s)) = view z (shift x (push y s))
+Searching for 2-distributive properties...
+Searching for analogy-distributive properties...
+Searching for associative-3 properties...
+Searching for idempotent properties...
+ 21. view x s = view x (view x s)
+ 22. push x s = push x (push x s)
+ 23. delete x s = delete x (delete x s)
+ 24. insert x y s = insert x y (insert x y s)
+ 25. view x (view y s) = view x (view y (view x (view y s)))
+ 26. push x (view y s) = push x (view y (push x (view y s)))
+ 27. push x (push y s) = push x (push y (push x (push y s)))
+ 28. push x (shift y s) = push x (shift y (push x (shift y s)))
+ 29. push x (delete y s) = push x (delete y (push x (delete y s)))
+ 30. shift x (push y s) = shift x (push y (shift x (push y s)))
+ 31. delete x (push y s) = delete x (push y (delete x (push y s)))
+ 32. push x (insert y z s) = push x (insert y z (push x (insert y z s)))
+ 33. delete x (insert y z s) = delete x (insert y z (delete x (insert y z s)))
+ 34. insert x y (push z s) = insert x y (push z (insert x y (push z s)))
+ 35. insert x y (delete z s) = insert x y (delete z (insert x y (delete z s)))
+ 36. insert x y (insert z w s) = insert x y (insert z w (insert x y (insert z w s)))
+
+12.866158944s
+20.301821594s
+7.642723401s
+7.658515287s
+8.012845566s
