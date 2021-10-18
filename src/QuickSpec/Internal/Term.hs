@@ -85,6 +85,7 @@ class Symbolic f a | a -> f where
 instance Symbolic f (Term f) where
   termsDL = return
   subst sub (Var x) = sub x
+  subst _ (Hole x) = Hole x
   subst _ (Fun x) = Fun x
   subst sub (t :$: u) = subst sub t :$: subst sub u
 
@@ -97,6 +98,7 @@ class Sized a where
 
 instance Sized f => Sized (Term f) where
   size (Var _) = 1
+  size (Hole _) = 1
   size (Fun f) = size f
   size (t :$: u) =
     size t + size u +
@@ -227,6 +229,7 @@ instance (PrettyTerm f, Typed f) => Apply (Term f) where
 depth :: Term f -> Int
 depth Var{} = 1
 depth Fun{} = 1
+depth Hole{} = 1
 depth (t :$: u) = depth t `max` (1+depth u)
 
 -- | A standard term ordering - size, skeleton, generality.
@@ -240,6 +243,7 @@ measure t =
    -length (usort (vars t)), vars t)
   where
     skel (Var (V ty _)) = Var (V ty 0)
+    skel (Hole (MV _ ty)) = Hole (MV "f" ty)
     skel (Fun f) = Fun f
     skel (t :$: u) = skel t :$: skel u
     -- Prefer fully-applied terms to partially-applied ones.
@@ -249,7 +253,8 @@ measure t =
       typeArity (typ f) - length ts + sum (map missing ts)
     missing (Var _ :@: ts) =
       sum (map missing ts)
-
+    missing (Hole _ :@: ts) = 
+      sum (map missing ts)
 -- | A helper for `Measure`.
 newtype MeasureFuns f = MeasureFuns (Term f)
 instance Ord f => Eq (MeasureFuns f) where
@@ -263,10 +268,14 @@ compareFuns (f :@: ts) (g :@: us) =
   compareHead f g `mappend` comparing (map MeasureFuns) ts us
   where
     compareHead (Var x) (Var y) = compare x y
+    compareHead (Hole x) (Hole y) = compare x y
     compareHead (Var _) _ = LT
     compareHead _ (Var _) = GT
+    compareHead (Hole _) _ = LT
+    compareHead _ (Hole _) = GT
     compareHead (Fun f) (Fun g) = compare f g
     compareHead _ _ = error "viewApp"
+-- FIXME add Holes
 
 ----------------------------------------------------------------------
 -- * Data types a la carte-ish.
