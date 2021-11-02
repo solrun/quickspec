@@ -81,6 +81,7 @@ class Symbolic f a | a -> f where
   termsDL :: a -> DList (Term f)
   -- | Apply a substitution to all terms in the thing.
   subst :: (Var -> Term f) -> a -> a
+  holesubst :: (MetaVar -> Term f) -> a -> a
 
 instance Symbolic f (Term f) where
   termsDL = return
@@ -88,10 +89,15 @@ instance Symbolic f (Term f) where
   subst _ (Hole x) = Hole x
   subst _ (Fun x) = Fun x
   subst sub (t :$: u) = subst sub t :$: subst sub u
+  holesubst sub (Hole x) = sub x
+  holesubst _ (Var x) = Var x
+  holesubst _ (Fun x) = Fun x
+  holesubst sub (t :$: u) = holesubst sub t :$: holesubst sub u
 
 instance Symbolic f a => Symbolic f [a] where
   termsDL = msum . map termsDL
   subst sub = map (subst sub)
+  holesubst sub = map (holesubst sub)
 
 class Sized a where
   size :: a -> Int
@@ -113,7 +119,8 @@ instance Pretty Var where
   --pPrint x = text "X" <#> pPrint (var_id x+1)
 
 instance Pretty MetaVar where
-  pPrint x = parens $ text ("?" ++ hole_id x) <+> text "::" <+> pPrint (hole_ty x)
+  pPrint x = text ("?" ++ hole_id x)
+  --pPrint x = parens $ text ("?" ++ hole_id x) <+> text "::" <+> pPrint (hole_ty x)
 
 instance PrettyTerm f => Pretty (Term f) where
   pPrintPrec l p (Var x :@: ts) =

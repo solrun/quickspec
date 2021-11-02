@@ -26,6 +26,8 @@ instance Symbolic f a => Symbolic f (Prop a) where
     termsDL rhs `mplus` termsDL lhs
   subst sub (lhs :=>: rhs) =
     subst sub lhs :=>: subst sub rhs
+  holesubst sub (lhs :=>: rhs) =
+    holesubst sub lhs :=>: holesubst sub rhs
 
 instance Ord a => Eq (Prop a) where
   x == y = x `compare` y == EQ
@@ -59,7 +61,7 @@ data Equation a = a :=: a deriving (Show, Eq, Ord, Generic, Functor)
 instance Symbolic f a => Symbolic f (Equation a) where
   termsDL (t :=: u) = termsDL t `mplus` termsDL u
   subst sub (t :=: u) = subst sub t :=: subst sub u
-
+  holesubst sub (t :=: u) = holesubst sub t :=: holesubst sub u
 infix 5 :=:
 
 instance Typed a => Typed (Equation a) where

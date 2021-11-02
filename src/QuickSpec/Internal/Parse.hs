@@ -14,6 +14,8 @@ import Text.ParserCombinators.ReadP
 import QuickSpec.Internal.Haskell hiding (con)
 import Data.List(find)
 
+import Debug.Trace
+
 class Parse fun a where
   parse :: ReadP fun -> ReadP a
 
