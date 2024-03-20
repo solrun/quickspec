@@ -1,5 +1,5 @@
 {-# OPTIONS_HADDOCK hide #-}
-{-# LANGUAGE DeriveGeneric, TypeFamilies, DeriveFunctor, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, TypeOperators #-}
+{-# LANGUAGE DeriveGeneric, TypeFamilies, DeriveFunctor, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, TypeOperators, DeriveTraversable #-}
 module QuickSpec.Internal.Prop where
 
 import Data.Bool (bool)
@@ -19,7 +19,7 @@ data Prop a =
   (:=>:) {
     lhs :: [Equation a],
     rhs :: Equation a }
-  deriving (Show, Generic, Functor)
+  deriving (Show, Generic, Functor, Traversable, Foldable)
 
 instance Symbolic f a => Symbolic f (Prop a) where
   termsDL (lhs :=>: rhs) =
@@ -45,6 +45,11 @@ unitProp p = [] :=>: p
 mapFun :: (fun1 -> fun2) -> Prop (Term fun1) -> Prop (Term fun2)
 mapFun f = fmap (fmap f)
 
+mapTerm :: (Term fun1 -> Term fun2) -> Prop (Term fun1) -> Prop (Term fun2)
+mapTerm f (lhs :=>: rhs) = map (both f) lhs :=>: both f rhs
+  where
+    both f (t :=: u) = f t :=: f u
+
 instance Typed a => Typed (Prop a) where
   typ _ = typeOf True
   otherTypesDL p = DList.fromList (literals p) >>= typesDL
@@ -56,7 +61,7 @@ instance Pretty a => Pretty (Prop a) where
   pPrint p =
     hsep (punctuate (text " &") (map pPrint (lhs p))) <+> text "=>" <+> pPrint (rhs p)
 
-data Equation a = a :=: a deriving (Show, Eq, Ord, Generic, Functor)
+data Equation a = a :=: a deriving (Show, Eq, Ord, Generic, Functor, Traversable, Foldable)
 
 instance Symbolic f a => Symbolic f (Equation a) where
   termsDL (t :=: u) = termsDL t `mplus` termsDL u

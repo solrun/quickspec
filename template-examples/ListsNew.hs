@@ -21,7 +21,8 @@ mySig = [
   ]
 main = do
 --  start <- getCurrentTime
-  qqSpec mySig
+  quickSpec mySig
+  roughSpec mySig
 --  qqTime <- getCurrentTime
 --  quickSpec mySig
 --  qsTime <- getCurrentTime

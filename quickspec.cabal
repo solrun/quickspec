@@ -1,5 +1,5 @@
 Name:                quickspec
-Version:             2.1.5
+Version:             2.2
 Cabal-version:       >= 1.10
 Build-type:          Simple
 
@@ -99,14 +99,14 @@ library
     QuickSpec.Internal.Testing.QuickCheck
     QuickSpec.Internal.Type
     QuickSpec.Internal.Utils
-    QuickSpec.Internal.SchemeSpec
-    QuickSpec.Internal.SchemeSpec.PropGen
-    QuickSpec.Internal.SchemeSpec.Matching
+    QuickSpec.Internal.RoughSpec
+    QuickSpec.Internal.RoughSpec.PropGen
+    QuickSpec.Internal.RoughSpec.Matching
 
   Build-depends:
-    QuickCheck >= 2.10,
+    QuickCheck >= 2.14.2,
     quickcheck-instances >= 0.3.16,
-    base >= 4 && < 5,
+    base >= 4.7 && < 5,
     constraints,
     containers,
     data-lens-light >= 0.1.1,
@@ -115,5 +115,5 @@ library
     spoon,
     template-haskell,
     transformers,
-    twee-lib == 2.2,
+    twee-lib,
     uglymemo

@@ -17,7 +17,7 @@ module QuickSpec.Internal.Explore.Polymorphic(
 
 import qualified QuickSpec.Internal.Explore.Schemas as Schemas
 import QuickSpec.Internal.Explore.Schemas(Schemas, Result(..), VariableUse(..))
-import QuickSpec.Internal.Term
+import QuickSpec.Internal.Term hiding (mapFun)
 import QuickSpec.Internal.Type
 import QuickSpec.Internal.Testing
 import QuickSpec.Internal.Pruning
@@ -61,7 +61,7 @@ initialState ::
   (Type -> VariableUse) ->
   Universe ->
   (Term fun -> Bool) ->
-  (Term fun -> testcase -> result) ->
+  (Term fun -> testcase -> Maybe result) ->
   Polymorphic testcase result fun norm
 initialState use univ inst eval =
   Polymorphic {
@@ -142,11 +142,19 @@ instance (PrettyTerm fun, Ord fun, Typed fun, Apply (Term fun), MonadPruner (Ter
   add prop = PolyM $ do
     univ <- access univ
     let insts = typeInstances univ (canonicalise (regeneralise (mapFun fun_original prop)))
-    mapM_ add insts
+    or <$> mapM add insts
+
+  normTheorems = PolyM normTheorems
+
+  decodeNormalForm hole t =
+    PolyM $ do
+      t <- decodeNormalForm (fmap (fmap fun_specialised) . hole) t
+      return $ fmap (fmap (\f -> PolyFun f f)) t
 
 instance MonadTester testcase (Term fun) m =>
   MonadTester testcase (Term (PolyFun fun)) (PolyM testcase result fun norm m) where
   test prop = PolyM $ lift (test (mapFun fun_original prop))
+  retest testcase prop = PolyM $ lift (retest testcase (mapFun fun_original prop))
 
 -- Given a property which only contains one type variable,
 -- add as much polymorphism to the property as possible.
@@ -260,17 +268,20 @@ universe xs = Universe (Set.fromList univ)
     -- resulting type. The idea is that, if some term can be built
     -- whose type is a generalisation of the type in the universe,
     -- that generalised type should also be in the universe.
-    univ = oneTypeVar (fixpoint (usort . mgus) univHo)
+    univ = oneTypeVar (fixpoint (usort . map canonicaliseType . mgus . prune) univHo)
       where
+        prune tys = filter (not . subsumed) tys
+          where
+            subsumed ty =
+              or [oneTypeVar pat == oneTypeVar ty && isJust (matchType pat ty) && isNothing (matchType ty pat) | pat <- tys]
         mgus tys =
           tys ++
           [ ty
           | ty1 <- tys, ty2 <- tys, 
             ty <- unPoly <$> combine (poly ty1) (poly ty2),
-            bound <- tys,
-            isJust (matchType ty bound) ]
+            or [isJust (matchType ty bound) | bound <- tys] ]
         combine ty1 ty2 =
-          maybeToList (polyMgu ty1 ty2) ++
+          catMaybes [polyMgu ty1 ty2 | ty1 < ty2] ++
           maybeToList (tryApply ty1 ty2) ++
           -- Get the function and argument types used by tryApply
           concat [[poly x, poly y] | (x, y) <- maybeToList (unPoly <$> polyFunctionMgu ty1 ty2)]

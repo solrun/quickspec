@@ -1,6 +1,6 @@
 -- | Miscellaneous utility functions.
 {-# OPTIONS_HADDOCK hide #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 module QuickSpec.Internal.Utils where
 
 import Control.Arrow((&&&))
@@ -20,6 +20,7 @@ import Data.Lens.Light
 import Twee.Base hiding (lookup)
 import Control.Monad.Trans.State.Strict
 import Control.Monad
+import Data.Typeable
 
 (#) :: Category.Category cat => cat b c -> cat a b -> cat a c
 (#) = (Category..)
@@ -142,3 +143,18 @@ crossProd :: [[a]] -> [[a]]
 crossProd [] = [[]]
 crossProd (xs:xss) = [x:ys| x <- xs, ys <- yss]
   where yss = crossProd xss
+
+isResourceLimitException :: SomeException -> Bool
+isResourceLimitException ex =
+  fromException ex == Just StackOverflow ||
+  fromException ex == Just HeapOverflow ||
+  isTimeout ex ||
+  case fromException ex of
+    Just (SomeAsyncException ex) -> isResourceLimitException (SomeException ex)
+    Nothing -> False
+  where
+    -- The Timeout type wasn't exported until GHC 8.10,
+    -- otherwise we could just do:
+    -- isJust (fromException ex :: Maybe Timeout)
+    isTimeout (SomeException ex) =
+      tyConModule (typeRepTyCon (typeOf ex)) == "System.Timeout"

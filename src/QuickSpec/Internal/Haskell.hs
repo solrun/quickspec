@@ -1,4 +1,6 @@
 {-# OPTIONS_HADDOCK hide #-}
+{-# LANGUAGE Haskell2010 #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -8,7 +10,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DefaultSignatures #-}
@@ -31,6 +32,7 @@ import Data.MemoUgly
 import Test.QuickCheck.Gen.Unsafe
 import Data.Char
 import Data.Ord
+import QuickSpec.Internal.Testing
 import qualified QuickSpec.Internal.Testing.QuickCheck as QuickCheck
 import qualified QuickSpec.Internal.Pruning.Twee as Twee
 import QuickSpec.Internal.Explore hiding (quickSpec)
@@ -48,7 +50,7 @@ import QuickSpec.Internal.Explore.Conditionals hiding (Normal)
 import Control.Spoon
 import qualified Data.Set as Set
 import qualified Test.QuickCheck.Poly as Poly
-import Numeric.Natural
+import Numeric.Natural()
 import Test.QuickCheck.Instances()
 import Data.Word
 import Data.List.NonEmpty (NonEmpty)
@@ -60,6 +62,12 @@ import Data.Void
 import Data.Unique
 import qualified Data.Monoid as DM
 import qualified Data.Semigroup as DS
+import qualified Data.Map.Strict as Map
+import Test.QuickCheck.Gen
+import Test.QuickCheck.Random
+import Data.IORef
+import Control.Monad.IO.Class
+import Control.Exception
 
 baseInstances :: Instances
 baseInstances =
@@ -256,8 +264,10 @@ instance Observe t p a => Observe t (Maybe p) (DM.First a) where
   observe t = observe t . DM.getFirst
 instance Observe t p a => Observe t (Maybe p) (DM.Last a) where
   observe t = observe t . DM.getLast
+#if !MIN_VERSION_base(4,16,0)
 instance Observe t p a => Observe t (Maybe p) (DS.Option a) where
   observe t = observe t . DS.getOption
+#endif
 instance Observe t p a => Observe t (Maybe p) (Maybe a) where
   observe t (Just a) = Just $ observe t a
   observe _ Nothing  = Nothing
@@ -367,15 +377,14 @@ arbitraryFunction :: CoArbitrary a => (a -> Gen b) -> Gen (a -> b)
 arbitraryFunction gen = promote (\x -> coarbitrary x (gen x))
 
 -- | Evaluate a Haskell term in an environment.
-evalHaskell :: Type -> Instances -> TestCase -> Term Constant -> Either (Value Ordy) (Term Constant)
-evalHaskell def insts (TestCase env obs) t =
-  maybe (Right t) Left $ do
-    let eval env t = evalTerm env (evalConstant insts) t
-    Identity val `In` w <- unwrap <$> eval env (defaultTo def t)
-    res <- obs (wrap w (Identity val))
-    -- Don't allow partial results to enter the decision tree
-    guard (withValue res (\(Ordy x) -> isJust (teaspoon (x == x))))
-    return res
+evalHaskell :: Type -> Instances -> TestCase -> Term Constant -> Maybe (Value Ordy)
+evalHaskell def insts (TestCase env obs) t = do
+  let eval env t = evalTerm env (evalConstant insts) t
+  Identity val `In` w <- unwrap <$> eval env (defaultTo def t)
+  res <- obs (wrap w (Identity val))
+  -- Don't allow partial results to enter the decision tree
+  guard (withValue res (\(Ordy x) -> isJust (teaspoon (x == x))))
+  return res
 
 data Constant =
   Constant {
@@ -385,7 +394,8 @@ data Constant =
     con_type :: Type,
     con_constraints :: [Type],
     con_size :: Int,
-    con_classify :: Classification Constant }
+    con_classify :: Classification Constant,
+    con_is_hole :: Bool }
 
 instance Eq Constant where
   x == y =
@@ -422,7 +432,8 @@ constant' name val =
     con_type = ty,
     con_constraints = constraints,
     con_size = 1,
-    con_classify = Function }
+    con_classify = Function,
+    con_is_hole = False }
   where
     (constraints, ty) = splitConstrainedType (typ val)
 
@@ -491,33 +502,51 @@ class Predicateable a where
   --
   -- Some speedup should be possible by using unboxed tuples instead...
   type PredicateTestCase a
-  uncrry :: a -> PredicateTestCase a -> Bool
+  type PredicateResult a
+  uncrry :: a -> PredicateTestCase a -> PredicateResult a
+  true :: proxy a -> Constant
 
 instance Predicateable Bool where
   type PredicateTestCase Bool = ()
+  type PredicateResult Bool = Bool
   uncrry = const
+  true _ = con "True" True
 
 instance forall a b. (Predicateable b, Typeable a) => Predicateable (a -> b) where
   type PredicateTestCase (a -> b) = (a, PredicateTestCase b)
+  type PredicateResult (a -> b) = PredicateResult b
   uncrry f (a, b) = uncrry (f a) b
+  true _ = true (Proxy :: Proxy b)
+
+-- A more user-friendly type for PredicateTestCase.
+type FriendlyPredicateTestCase a = Friendly (PredicateTestCase a)
+class HasFriendly a where
+  type Friendly a
+  unfriendly :: Friendly a -> a
+instance HasFriendly () where
+  type Friendly () = ()
+  unfriendly () = ()
+instance HasFriendly (a, ()) where
+  type Friendly (a, ()) = a
+  unfriendly a = (a, ())
+instance HasFriendly (a, (b, ())) where
+  type Friendly (a, (b, ())) = (a, b)
+  unfriendly (a, b) = (a, (b, ()))
+instance HasFriendly (a, (b, (c, ()))) where
+  type Friendly (a, (b, (c, ()))) = (a, b, c)
+  unfriendly (a, b, c) = (a, (b, (c, ())))
+instance HasFriendly (a, (b, (c, (d, ())))) where
+  type Friendly (a, (b, (c, (d, ())))) = (a, b, c, d)
+  unfriendly (a, b, c, d) = (a, (b, (c, (d, ()))))
 
 data TestCaseWrapped (t :: Symbol) a = TestCaseWrapped { unTestCaseWrapped :: a }
 
-true :: Constant
-true = con "True" True
-
-trueTerm :: Term Constant
-trueTerm = Fun true
-
--- | Declare a predicate with a given name and value.
--- The predicate should have type @... -> Bool@.
--- Uses an explicit generator.
-predicateGen :: forall a b. ( Predicateable a
-             , Typeable a
-             , Typeable b
-             , Typeable (PredicateTestCase a))
-             => String -> a -> (b -> Gen (PredicateTestCase a)) -> (Instances, Constant)
-predicateGen name pred gen =
+unfriendlyPredicateGen :: forall a b. ( Predicateable a
+                       , Typeable a
+                       , Typeable b
+                       , Typeable (PredicateTestCase a))
+                       => String -> a -> (b -> Gen (PredicateTestCase a)) -> (Instances, Constant)
+unfriendlyPredicateGen name pred gen =
   let
     -- The following doesn't compile on GHC 7.10:
     -- ty = typeRep (Proxy :: Proxy (TestCaseWrapped sym (PredicateTestCase a)))
@@ -545,7 +574,7 @@ predicateGen name pred gen =
     inst2 :: Names (TestCaseWrapped SymA (PredicateTestCase a))
     inst2 = Names [name ++ "_var"]
 
-    conPred = (con name pred) { con_classify = Predicate conSels ty (Fun true) }
+    conPred = (con name pred) { con_classify = Predicate conSels ty (Fun (true (Proxy :: Proxy a))) }
     conSels = [ (constant' (name ++ "_" ++ show i) (select (i + length (con_constraints conPred)))) { con_classify = Selector i conPred ty, con_size = 0 } | i <- [0..typeArity (typ conPred)-1] ]
 
     select i =
@@ -563,11 +592,23 @@ predicateGen name pred gen =
 
 -- | Declare a predicate with a given name and value.
 -- The predicate should have type @... -> Bool@.
+-- Uses an explicit generator.
+predicateGen :: forall a. ( Predicateable a
+             , Typeable a
+             , Typeable (PredicateTestCase a)
+             , HasFriendly (PredicateTestCase a))
+             => String -> a -> (Gen (FriendlyPredicateTestCase a)) -> (Instances, Constant)
+predicateGen name pred gen =
+  unfriendlyPredicateGen name pred (\() -> unfriendly <$> gen)
+
+-- | Declare a predicate with a given name and value.
+-- The predicate should have type @... -> Bool@.
 predicate :: forall a. ( Predicateable a
+          , PredicateResult a ~ Bool
           , Typeable a
           , Typeable (PredicateTestCase a))
           => String -> a -> (Instances, Constant)
-predicate name pred = predicateGen name pred inst
+predicate name pred = unfriendlyPredicateGen name pred inst
   where
     inst :: Dict (Arbitrary (PredicateTestCase a)) -> Gen (PredicateTestCase a)
     inst Dict = arbitrary `suchThat` uncrry pred
@@ -583,6 +624,7 @@ data Config =
     cfg_quickCheck :: QuickCheck.Config,
     cfg_twee :: Twee.Config,
     cfg_max_size :: Int,
+    cfg_max_depth :: Int,
     cfg_max_commutative_size :: Int,
     cfg_max_functions :: Int,
     cfg_instances :: Instances,
@@ -595,12 +637,15 @@ data Config =
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
     cfg_schemas :: [(String,Prop (Term Constant))],
-    cfg_print_style :: PrintStyle
+    cfg_print_style :: PrintStyle,
+    cfg_check_consistency :: Bool,
+    cfg_handle_resource_limit :: Bool
     }
 
 lens_quickCheck = lens cfg_quickCheck (\x y -> y { cfg_quickCheck = x })
 lens_twee = lens cfg_twee (\x y -> y { cfg_twee = x })
 lens_max_size = lens cfg_max_size (\x y -> y { cfg_max_size = x })
+lens_max_depth = lens cfg_max_depth (\x y -> y { cfg_max_depth = x })
 lens_max_commutative_size = lens cfg_max_commutative_size (\x y -> y { cfg_max_commutative_size = x })
 lens_max_functions = lens cfg_max_functions (\x y -> y { cfg_max_functions = x })
 lens_instances = lens cfg_instances (\x y -> y { cfg_instances = x })
@@ -611,6 +656,8 @@ lens_background = lens cfg_background (\x y -> y { cfg_background = x })
 lens_print_filter = lens cfg_print_filter (\x y -> y { cfg_print_filter = x })
 lens_schemas = lens cfg_schemas (\x y -> y {cfg_schemas = x})
 lens_print_style = lens cfg_print_style (\x y -> y { cfg_print_style = x })
+lens_check_consistency = lens cfg_check_consistency (\x y -> y { cfg_check_consistency = x })
+lens_handle_resource_limit = lens cfg_handle_resource_limit (\x y -> y { cfg_handle_resource_limit = x })
 
 defaultConfig :: Config
 defaultConfig =
@@ -618,6 +665,7 @@ defaultConfig =
     cfg_quickCheck = QuickCheck.Config { QuickCheck.cfg_num_tests = 1000, QuickCheck.cfg_max_test_size = 100, QuickCheck.cfg_fixed_seed = Nothing },
     cfg_twee = Twee.Config { Twee.cfg_max_term_size = minBound, Twee.cfg_max_cp_depth = maxBound },
     cfg_max_size = 7,
+    cfg_max_depth = maxBound,
     cfg_max_commutative_size = 5,
     cfg_max_functions = maxBound,
     cfg_instances = mempty,
@@ -627,7 +675,9 @@ defaultConfig =
     cfg_background = [],
     cfg_print_filter = \_ -> True,
     cfg_schemas = [],
-    cfg_print_style = ForHumans }
+    cfg_print_style = ForHumans,
+    cfg_check_consistency = False,
+    cfg_handle_resource_limit = False }
 
 -- Extra types for the universe that come from in-scope instances.
 instanceTypes :: Instances -> Config -> [Type]
@@ -697,9 +747,14 @@ instance Pretty Warnings where
 
 quickSpec :: Config -> IO [Prop (Term Constant)]
 quickSpec cfg@Config{..} = do
+  propNo <- newIORef 1
+  props <- newIORef ([] :: [Prop (Term Constant)])
+
   let
     constantsOf f =
-      [true | any (/= Function) (map classify (f cfg_constants))] ++
+      usort (concatMap funs $
+        [clas_true | Predicate{..} <- map classify (f cfg_constants)] ++
+        [clas_true (classify clas_pred) | Selector{..} <- map classify (f cfg_constants)]) ++
       f cfg_constants ++ concatMap selectors (f cfg_constants)
     constants = constantsOf concat
 
@@ -709,19 +764,20 @@ quickSpec cfg@Config{..} = do
     eval = evalHaskell cfg_default_to instances
     was_observed = isNothing . findOrdInstance instances  -- it was observed if there is no Ord instance directly in scope
 
+    prettierProp funs norm = prettyDefinition funs . prettyAC norm . conditionalise
+    prettiestProp funs norm = prettyProp (names instances) . prettierProp funs norm
+
     present funs prop = do
       norm <- normaliser
-      --let sf = schema_filter cfg_schemas prop
-      let prop' = prettyDefinition funs (prettyAC norm (conditionalise prop))
-      --when (cfg_print_filter prop && (fst sf)) $ do -- post-filtering
-      when (cfg_print_filter prop) $ do -- no post-filtering
-        (n :: Int, props) <- get
-        put (n+1, prop':props)
+      let prop' = prettierProp funs norm prop
+      when (not (hasBackgroundPredicates prop') && not (isBackgroundProp prop') && cfg_print_filter prop) $ do
+        n <- liftIO $ readIORef propNo
+        liftIO $ writeIORef propNo (n+1)
         putLine $
           case cfg_print_style of
             ForHumans ->
               printf "%3d. %s" n $ show $
-                prettyProp (names instances) prop' <+> disambiguatePropType prop
+                prettiestProp funs norm prop <+> disambiguatePropType prop
             ForQuickCheck ->
               renderStyle (style {lineLength = 78}) $ nest 2 $
                 prettyPropQC
@@ -731,6 +787,22 @@ quickSpec cfg@Config{..} = do
                   (names instances)
                   prop'
                   <+> disambiguatePropType prop
+
+    hasBackgroundPredicates (_ :=>: t :=: u)
+      | not (null [p | p <- funs t, isBackgroundPredicate p]),
+        not (null [q | q <- funs u, isBackgroundPredicate q]) =
+        True
+    hasBackgroundPredicates _ = False
+    isBackgroundPredicate p =
+      p `elem` concat (take 1 cfg_constants) &&
+      case classify p of
+        Predicate{} -> True
+        _ -> False
+
+    isBackgroundProp p =
+      not (null fs) && and [f `elem` concat (take 1 cfg_constants) | f <- fs]
+      where
+        fs = funs p
 
     -- XXX do this during testing
     constraintsOk = memo $ \con ->
@@ -742,6 +814,7 @@ quickSpec cfg@Config{..} = do
       sortTerms measure $
       filterEnumerator (all constraintsOk . funs) $
       filterEnumerator (\t -> length (usort (funs t)) <= cfg_max_functions) $
+      filterEnumerator (\t -> depth t <= cfg_max_depth) $
       filterEnumerator (\t -> size t + length (conditions t) <= cfg_max_size) $
       enumerateConstants atomic `mappend` enumerateApplications
       where
@@ -764,7 +837,10 @@ quickSpec cfg@Config{..} = do
         when (cfg_print_style == ForQuickCheck) $ do
           putLine "quickspec_laws :: [(String, Property)]"
           putLine "quickspec_laws ="
-      let pres = if n == 0 then \_ -> return () else present (constantsOf f)
+      let
+        pres prop = do
+          liftIO $ modifyIORef props (prop:)
+          if n == 0 then return () else present (constantsOf f) prop
       QuickSpec.Internal.Explore.quickSpec pres (flip eval) cfg_max_size cfg_max_commutative_size use univ
         (enumerator (map Fun (constantsOf g)))
       when (n > 0) $ do
@@ -779,11 +855,57 @@ quickSpec cfg@Config{..} = do
         round n = mainOf n (concat . take 1 . drop n) (concat . take (n+1))
         rounds = length cfg_constants
 
-  join $
-    fmap withStdioTerminal $
-    generate $
-    QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
-    Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
-    runConditionals constants $
-    fmap (reverse . snd) $ flip execStateT (1, []) main
+    -- Used in checkConsistency. Generate a term to be used when a
+    -- Twee proof contains a hole ("?"), i.e. a don't-care variable.
+    hole ty = do
+      -- It doesn't matter what the value of the variable is, so
+      -- generate a single random value and use that.
+      vgen <- findInstance instances ty :: Maybe (Value Gen)
+      let runGen g = Identity (unGen g (mkQCGen 1234) 5)
+      return $ Fun $ (constant' "hole" (mapValue runGen vgen)) { con_is_hole = True }
 
+    -- Remove holes by replacing them with a fresh variable.
+    removeHoles prop = mapTerm (flatMapFun f) prop
+      where
+        f con
+          | con_is_hole con = Var (V (typ con) n)
+          | otherwise = Fun con
+        n = freeVar prop
+
+    checkConsistency = do
+      thms <- theorems hole
+      let numThms = length thms
+      norm <- normaliser
+
+      forM_ (zip [1 :: Int ..] thms) $ \(i, thm) -> do
+        putStatus (printf "checking laws for consistency: %d/%d" i numThms)
+        res <- test (prop thm)
+        case res of
+          TestFailed testcase -> do
+            forM_ (axiomsUsed thm) $ \(ax, insts) ->
+              forM_ insts $ \inst -> do
+                res <- retest testcase inst
+                when (testResult res == TestFailed ()) $ do
+                  modify (Map.insertWith Set.union (removeHoles ax) (Set.singleton (removeHoles inst)))
+          _ -> return ()
+
+      falseProps <- get
+      forM_ (Map.toList falseProps) $ \(ax, insts) -> do
+        putLine (printf "*** Law %s is false!" (prettyShow (prettiestProp constants norm ax)))
+        putLine "False instances:"
+        forM_ (Set.toList insts) $ \inst -> do
+          putLine (printf "  %s is false" (prettyShow (prettiestProp constants norm inst)))
+        putLine ""
+
+  handleJust (\ex -> if cfg_handle_resource_limit && isResourceLimitException ex then Just () else Nothing) return $
+    join $
+      fmap withStdioTerminal $
+      generate $
+      QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
+      Twee.run cfg_twee { Twee.cfg_max_term_size = Twee.cfg_max_term_size cfg_twee `max` cfg_max_size } $
+      runConditionals constants $ do
+        main
+        when cfg_check_consistency $ void $ execStateT checkConsistency Map.empty
+
+  -- conditionalise so that conditional properties are returned in readable format
+  fmap conditionalise . reverse <$> readIORef props

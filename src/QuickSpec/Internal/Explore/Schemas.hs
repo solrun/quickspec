@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 import Data.Set(Set)
 import Data.Maybe
 import Control.Monad
-import Twee.Label
+import Data.Label
 
 -- | Constrains how variables of a particular type may occur in a term.
 data VariableUse =
@@ -51,7 +51,7 @@ instance_ t = reading (\Schemas{..} -> keyDefault t sc_empty # instances)
 initialState ::
   (Type -> VariableUse) ->
   (Term fun -> Bool) ->
-  (Term fun -> testcase -> result) ->
+  (Term fun -> testcase -> Maybe result) ->
   Schemas testcase result fun norm
 initialState use inst eval =
   Schemas {
@@ -141,8 +141,8 @@ instantiate rep t = do
       res <- Terms.explore t
       case res of
         Terms.Discovered prop -> do
-          add prop
-          return (Just prop)
+          res <- add prop
+          if res then return (Just prop) else return Nothing
         _ -> return Nothing)
 
 -- sortBy (comparing generality) should give most general instances first.

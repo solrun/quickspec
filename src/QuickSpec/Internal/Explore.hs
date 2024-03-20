@@ -1,5 +1,5 @@
 {-# OPTIONS_HADDOCK hide #-}
-{-# LANGUAGE FlexibleContexts, PatternGuards #-}
+{-# LANGUAGE FlexibleContexts, PatternGuards, CPP #-}
 module QuickSpec.Internal.Explore where
 
 import QuickSpec.Internal.Explore.Polymorphic
@@ -14,7 +14,9 @@ import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Text.Printf
+#if! MIN_VERSION_base(4,9,0)
 import Data.Semigroup(Semigroup(..))
+#endif
 import Data.List
 
 newtype Enumerator a = Enumerator { enumerate :: Int -> [[a]] -> [a] }
@@ -62,7 +64,7 @@ quickSpec ::
   (Ord fun, Ord norm, Sized fun, Typed fun, Ord result, PrettyTerm fun,
   MonadPruner (Term fun) norm m, MonadTester testcase (Term fun) m, MonadTerminal m) =>
   (Prop (Term fun) -> m ()) ->
-  (Term fun -> testcase -> result) ->
+  (Term fun -> testcase -> Maybe result) ->
   Int -> Int -> (Type -> VariableUse) -> Universe -> Enumerator (Term fun) -> m ()
 quickSpec present eval maxSize maxCommutativeSize use univ enum = do
   let

@@ -1,7 +1,7 @@
 -- | This module is internal to QuickSpec.
 --
 -- Typed terms and operations on them.
-{-# LANGUAGE PatternSynonyms, ViewPatterns, TypeSynonymInstances, FlexibleInstances, TypeFamilies, ConstraintKinds, DeriveGeneric, DeriveAnyClass, MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, TypeOperators, DeriveFunctor, FlexibleContexts #-}
+{-# LANGUAGE PatternSynonyms, ViewPatterns, TypeSynonymInstances, FlexibleInstances, TypeFamilies, ConstraintKinds, DeriveGeneric, DeriveAnyClass, MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, TypeOperators, DeriveFunctor, FlexibleContexts, DeriveTraversable #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module QuickSpec.Internal.Term(module QuickSpec.Internal.Term, module Twee.Base, module Twee.Pretty) where
 
@@ -22,7 +22,7 @@ import Data.Maybe(isJust)
 
 -- | A typed term.
 data Term f = Var {-# UNPACK #-} !Var | Fun !f | !(Term f) :$: !(Term f) | Hole MetaVar
-  deriving (Eq, Ord, Show, Functor)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 data MetaVar = MV { hole_id :: String, hole_ty :: Type }
   deriving (Eq, Ord, Show)
@@ -175,6 +175,42 @@ mapVar f (Var x) = Var (f x)
 mapVar _ (Fun x) = Fun x
 mapVar f (t :$: u) = mapVar f t :$: mapVar f u
 
+-- | Map a function over function symbols.
+mapFun :: (f -> g) -> Term f -> Term g
+mapFun _ (Var x) = Var x
+mapFun f (Fun x) = Fun (f x)
+mapFun f (t :$: u) = mapFun f t :$: mapFun f u
+
+-- | Map a function over function symbols.
+flatMapFun :: (f -> Term g) -> Term f -> Term g
+flatMapFun _ (Var x) = Var x
+flatMapFun f (Fun x) = f x
+flatMapFun f (t :$: u) =
+  flatMapFun f t :$: flatMapFun f u
+
+-- | A type representing functions which may be the identity.
+data OrId f = Id | NotId f
+
+-- | Eliminate the identity function from a term.
+eliminateId :: Term (OrId f) -> Maybe (Term f)
+eliminateId t = do
+  t <- elim t
+  case t of
+    Id -> Nothing
+    NotId t -> Just t
+  where
+    elim :: Term (OrId f) -> Maybe (OrId (Term f))
+    elim (Var x) = Just (NotId (Var x))
+    elim (Fun (NotId f)) = Just (NotId (Fun f))
+    elim (Fun Id) = Just Id
+    elim (t :$: u) = do
+      t <- elim t
+      u <- elim u
+      case (t, u) of
+        (Id, _) -> Just u
+        (NotId _, Id) -> Nothing
+        (NotId t, NotId u) -> Just (NotId (t :$: u))
+
 -- | Find all subterms of a term. Includes the term itself.
 subterms :: Term f -> [Term f]
 subterms t = t:properSubterms t
@@ -260,7 +296,7 @@ measure t =
       typeArity (typ f) - length ts + sum (map missing ts)
     missing (Var _ :@: ts) =
       sum (map missing ts)
-    missing (Hole _ :@: ts) = 
+    missing (Hole _ :@: ts) =
       sum (map missing ts)
 -- | A helper for `Measure`.
 newtype MeasureFuns f = MeasureFuns (Term f)

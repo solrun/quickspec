@@ -7,4 +7,5 @@ main = quickSpec [
   , con "+" ((+) :: Float -> Float -> Float)
   , con "*" ((*) :: Float -> Float -> Float)
   , monoType (Proxy :: Proxy Float)
+  , withConsistencyCheck
   ]
