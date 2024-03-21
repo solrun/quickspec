@@ -71,7 +71,7 @@ explore' :: (Pretty term, Typed term, Ord norm, Ord result, MonadTester testcase
 explore' t = do
   norm <- normaliser
   exp norm $ \prop -> do
-    res <- test prop -- Match with relevant schema before sending to testing?
+    res <- test prop
     case res of
       Untestable ->
         return Singleton
@@ -106,49 +106,3 @@ explore' t = do
                 prop = t === u
       where
         t' = norm t
-{-
-exploreWithSchema :: (Ord f, PrettyTerm f, Typed f, SynRep f, Sized f, Ord norm, Ord result, MonadTester testcase (Term f) m, MonadPruner (Term f) norm m, MonadTerminal m) => Equation (Term f) ->
-  Term f -> StateT (Terms testcase result (Term f) norm) m (Result (Term f))
-exploreWithSchema s t = do
-  res <- exploreWithSchema' s t
-  return res
-
-exploreWithSchema' :: (Ord f, Sized f, Typed f, PrettyTerm f, SynRep f, Ord norm, Ord result, MonadTester testcase (Term f) m, MonadPruner (Term f) norm m) => Equation (Term f) ->
-  Term f -> StateT (Terms testcase result (Term f) norm) m (Result (Term f))
-exploreWithSchema' s t = do
-  norm <- normaliser
-  exp norm $ \prop -> do
-    res <- test prop -- Match with relevant schema before sending to testing?
-    case res of
-      Nothing -> do
-        return (Discovered prop)
-      Just tc -> do
-        treeForType ty %= addTestCase tc
-        exp norm $
-          error "returned counterexample failed to falsify property"
-
-  where
-    ty = typ t
-    exp norm found = do
-      tm@Terms{..} <- get
-      case Map.lookup t' tm_terms of
-        Just u -> return (Knew (t === u))
-        Nothing ->
-          case insert t (tm ^. treeForType ty) of
-            Distinct tree -> do
-              put (setL (treeForType ty) tree tm { tm_terms = Map.insert t' t tm_terms })
-              return Singleton
-            EqualTo u
-              -- tm_terms is not kept normalised wrt the discovered laws;
-              -- instead, we normalise it lazily like so.
-              | t' == u' -> do
-                put tm { tm_terms = Map.insert u' u tm_terms }
-                return (Knew prop)
-              -- Ask QuickCheck for a counterexample to the property.
-              | matchEquations s (t :=: u) -> found prop
-              where
-                u' = norm u
-                prop = t === u
-      where
-        t' = norm t
--}
