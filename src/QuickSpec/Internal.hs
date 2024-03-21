@@ -103,7 +103,7 @@ con name x =
 -- declare a template with a given name and a string representation
 template :: String -> String -> Sig
 template name rep =
-  Sig $ \_ cfg -> cfg {Haskell.cfg_schemas = Haskell.cfg_schemas cfg ++ [(name, p cfg)]}
+  Sig $ \_ cfg -> cfg {Haskell.cfg_templates = Haskell.cfg_templates cfg ++ [(name, p cfg)]}
   where p c = Polymorphic.regeneralise $
               parseProp (parseFromConfig c) rep :: Prop (Term Haskell.Constant)
 
@@ -479,19 +479,6 @@ funs = background [
 -- see 'bools', 'arith', 'lists', 'funs' and 'without'.
 prelude :: Sig
 prelude = signature [bools, arith (Proxy :: Proxy Int), lists]
-
-testSig = [
-  con "reverse" (reverse :: [A] -> [A]),
-  con "++" ((++) :: [A] -> [A] -> [A]),
-  con "[]" ([] :: [A]),
-  con "map" (map :: (A -> B) -> [A] -> [B]),
-  con "length" (length :: [A] -> Int),
-  con "concat" (concat :: [[A]] -> [A]),
-  template "" "?F(?G(A),?H(A)) = ?F(?H(A),?G(A))",
-  template "" "?F(A) = ?G(A)",
-  template "" "?F(A) = ?F(?F(A))",
-  template "commutative" "?F(X,Y) = ?F(Y,X)",
-  template "" "?F(?G(X)) = ?F(X)"]
 
 makeConfig :: (Signature a) => a -> Haskell.Config
 makeConfig sig = runSig sig (Context 1 []) Haskell.defaultConfig

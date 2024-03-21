@@ -69,6 +69,7 @@ module QuickSpec(
   -- * Running QuickSpec
   quickSpec, Sig, Signature(..),
 
+  -- * Running RoughSpec
   roughSpec,
   roughSpecWithQuickSpec,
   defaultTemplates,

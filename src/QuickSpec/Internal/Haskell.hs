@@ -408,14 +408,10 @@ instance Ord Constant where
 
 instance Background Constant
 
---instance SynRep Constant where
---  srep = con_name
-
 con :: Typeable a => String -> a -> Constant
 con name val =
   constant' name $ toValue (Identity val)
-  --oneTypeVar (toValue (Identity val)) -- TODO: toggle whether or not oneTypeVar is called
--- TODO: is oneTypeVar necessary here? has smarter prop generation already fixed this?
+
 constant' :: String -> Value Identity -> Constant
 constant' name val =
   Constant {
@@ -636,7 +632,7 @@ data Config =
     cfg_infer_instance_types :: Bool,
     cfg_background :: [Prop (Term Constant)],
     cfg_print_filter :: Prop (Term Constant) -> Bool,
-    cfg_schemas :: [(String,Prop (Term Constant))],
+    cfg_templates :: [(String,Prop (Term Constant))],
     cfg_print_style :: PrintStyle,
     cfg_check_consistency :: Bool,
     cfg_handle_resource_limit :: Bool
@@ -654,7 +650,7 @@ lens_default_to = lens cfg_default_to (\x y -> y { cfg_default_to = x })
 lens_infer_instance_types = lens cfg_infer_instance_types (\x y -> y { cfg_infer_instance_types = x })
 lens_background = lens cfg_background (\x y -> y { cfg_background = x })
 lens_print_filter = lens cfg_print_filter (\x y -> y { cfg_print_filter = x })
-lens_schemas = lens cfg_schemas (\x y -> y {cfg_schemas = x})
+lens_templates = lens cfg_templates (\x y -> y {cfg_templates = x})
 lens_print_style = lens cfg_print_style (\x y -> y { cfg_print_style = x })
 lens_check_consistency = lens cfg_check_consistency (\x y -> y { cfg_check_consistency = x })
 lens_handle_resource_limit = lens cfg_handle_resource_limit (\x y -> y { cfg_handle_resource_limit = x })
@@ -674,7 +670,7 @@ defaultConfig =
     cfg_infer_instance_types = False,
     cfg_background = [],
     cfg_print_filter = \_ -> True,
-    cfg_schemas = [],
+    cfg_templates = [],
     cfg_print_style = ForHumans,
     cfg_check_consistency = False,
     cfg_handle_resource_limit = False }

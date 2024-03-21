@@ -160,8 +160,7 @@ roughSpec cfg@Config{..} = do
             --putLine "Testing properties ..."
             mapM_ testpres testps
 
-      mapM_ runschemespec cfg_schemas
-      -- mapM_ runwithPruning cfg_schemas
+      mapM_ runschemespec cfg_templates
       when (n > 0) $ do
         putLine ""
 
