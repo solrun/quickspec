@@ -31,6 +31,7 @@ import Control.Monad
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class (lift)
 import Data.IORef
+import qualified Data.Map.Strict as Map
 import QuickSpec.Internal.Terminal
 import Text.Printf
 import QuickSpec.Internal.RoughSpec.PropGen
@@ -164,11 +165,9 @@ roughSpec cfg@Config{..} = do
       when (n > 0) $ do
         putLine ""
 
-    main = Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 1} $ do
-      (n :: Int, props) <- lift get
-      lift $ put (n, cfg_background ++ props)
+    main = do
       forM_ cfg_background $ \prop -> do
-        addPoly prop
+        add prop
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
@@ -180,5 +179,8 @@ roughSpec cfg@Config{..} = do
     fmap withStdioTerminal $
     generate $
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
-    --runConditionals constants $
-    fmap (reverse . snd) $ flip execStateT (1, []) main
+    runConditionals constants $ do
+      main
+      --when cfg_check_consistency $ void $ execStateT checkConsistency Map.empty
+
+  fmap conditionalise . reverse <$> readIORef props
