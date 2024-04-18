@@ -67,7 +67,7 @@ roughSpec cfg@Config{..} ext_templates = do
     templates = case ext_templates of
       Nothing -> cfg_templates
       Just ts -> cfg_templates ++ ts
-
+      
     -- Present property to user and keep for future pruning.
     present funcs prop = do
       --putLine $ prettyShow prop
@@ -167,9 +167,11 @@ roughSpec cfg@Config{..} ext_templates = do
       when (n > 0) $ do
         putLine ""
 
-    main = do
+    main = Twee.run cfg_twee { Twee.cfg_max_term_size = 10, Twee.cfg_max_cp_depth = 1} $ do
+      (n :: Int, props) <- lift get
+      lift $ put (n, cfg_background ++ props)
       forM_ cfg_background $ \prop -> do
-        add prop
+        addPoly prop
       mapM_ round [0..numrounds-1]
       where
         round n        = mainOf n (currentRound n) (roundsSoFar n)
@@ -181,8 +183,5 @@ roughSpec cfg@Config{..} ext_templates = do
     fmap withStdioTerminal $
     generate $
     QuickCheck.run cfg_quickCheck (arbitraryTestCase cfg_default_to instances) eval $
-    runConditionals constants $ do
-      main
-      --when cfg_check_consistency $ void $ execStateT checkConsistency Map.empty
-
-  --fmap conditionalise . reverse <$> readIORef props
+    --runConditionals constants $
+    fmap (reverse . snd) $ flip execStateT (1, []) main
