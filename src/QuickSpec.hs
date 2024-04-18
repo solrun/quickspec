@@ -75,6 +75,7 @@ module QuickSpec(
   defaultTemplates,
   roughSpecDefault,
   roughSpecQSDefault,
+  roughSpecExternalTemplates,
 
   -- * Declaring functions and predicates
   con, predicate, predicateGen,

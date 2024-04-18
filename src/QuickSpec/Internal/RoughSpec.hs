@@ -30,13 +30,13 @@ import QuickSpec.Internal.Explore hiding (quickSpec)
 import Control.Monad
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class (lift)
-import Data.IORef
+--import Data.IORef
 import QuickSpec.Internal.Terminal
 import Text.Printf
 import QuickSpec.Internal.RoughSpec.PropGen
 import QuickSpec.Internal.Testing
 import QuickSpec.Internal.RoughSpec.Matching
-import QuickSpec.Internal.Explore.Polymorphic
+import QuickSpec.Internal.Explore.Polymorphic hiding (univ)
 import Debug.Trace
 
 
@@ -45,10 +45,10 @@ import Debug.Trace
 -- TODO: simplify/beautify?
 
 -- TODO: Decrease code duplication between this function and Haskell/quickSpec function?
-roughSpec :: Config -> IO [Prop (Term Constant)]
-roughSpec cfg@Config{..} = do
-  propNo <- newIORef 1
-  props <- newIORef ([] :: [Prop (Term Constant)])
+roughSpec :: Config -> Maybe [(String, Prop (Term Constant))] -> IO [Prop (Term Constant)]
+roughSpec cfg@Config{..} ext_templates = do
+  --propNo <- newIORef 1
+  --props' <- newIORef ([] :: [Prop (Term Constant)])
   let
     constantsOf f =
       usort (concatMap funs $
@@ -64,11 +64,14 @@ roughSpec cfg@Config{..} = do
     addPoly aprop = do
       let insts = typeInstances univ (canonicalise (regeneralise aprop))
       mapM_ add insts
-
+    templates = case ext_templates of
+      Nothing -> cfg_templates
+      Just ts -> cfg_templates ++ ts
+      
     -- Present property to user and keep for future pruning.
-    present funs prop = do
+    present funcs prop = do
       --putLine $ prettyShow prop
-      let prop' = prettyDefinition funs (conditionalise prop)
+      let prop' = prettyDefinition funcs (conditionalise prop)
       when (cfg_print_filter prop) $ do
         (n :: Int, props) <- get
         put (n+1, prop':props)
@@ -77,8 +80,8 @@ roughSpec cfg@Config{..} = do
             prettyProp (names instances) prop' <+> disambiguatePropType prop
 
     -- Keep track of property for pruning without presenting it.
-    putP funs prop = do
-      let prop' = prettyDefinition funs (conditionalise prop)
+    putP funcs prop = do
+      let prop' = prettyDefinition funcs (conditionalise prop)
       --putLine $ "putting" ++ (prettyShow prop')
       (n :: Int,props) <- get
       put (n,prop':props)
@@ -160,7 +163,7 @@ roughSpec cfg@Config{..} = do
             --putLine "Testing properties ..."
             mapM_ testpres testps
 
-      mapM_ runschemespec cfg_templates
+      mapM_ runschemespec templates
       when (n > 0) $ do
         putLine ""
 

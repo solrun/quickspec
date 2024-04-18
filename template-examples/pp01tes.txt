@@ -1,0 +1,20 @@
+   [("Prod_prop_01.add_zero", "add ?y Z = ?y",
+     template_equation
+      (template_app (template_app (template_hole 1, template_var 0), template_hole 0),
+       template_var 0)),
+    ("Prod_prop_01.property0", "double ?x = add ?x ?x",
+     template_equation
+      (template_app (template_hole 1, template_var 0),
+       template_app (template_app (template_hole 0, template_var 0), template_var 0))),
+    ("Prod_prop_01.add_comm", "add ?x ?y = add ?y ?x",
+     template_equation
+      (template_app (template_app (template_hole 0, template_var 1), template_var 0),
+       template_app (template_app (template_hole 0, template_var 0), template_var 1))),
+    ("Prod_prop_01.add_2", "add ?x (S ?y) = S (add ?x ?y)",
+     template_equation
+      (template_app
+        (template_app (template_hole 1, template_var 1),
+         template_app (template_hole 0, template_var 0)),
+       template_app
+        (template_hole 0,
+         template_app (template_app (template_hole 1, template_var 1), template_var 0))))]

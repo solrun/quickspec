@@ -32,6 +32,9 @@ import Data.Proxy
 import System.Environment
 import qualified QuickSpec.Internal.RoughSpec as RoughSpec
 import QuickSpec.Internal.Parse
+import QuickSpec.Internal.RoughSpec.ParsingTemplates
+import System.FilePath
+import Control.Exception
 #if !MIN_VERSION_base(4,9,0)
 import Data.Semigroup(Semigroup(..))
 #endif
@@ -485,13 +488,13 @@ makeConfig sig = runSig sig (Context 1 []) Haskell.defaultConfig
 
 roughSpec :: Signature sig => sig -> IO ()
 roughSpec s = do
-  RoughSpec.roughSpec $ makeConfig s
+  RoughSpec.roughSpec (makeConfig s) Nothing
   return ()
 
 roughSpecWithQuickSpec :: Int -> [Sig] -> IO ()
 roughSpecWithQuickSpec k s = do
   qsProps <- quickSpecResult $ s ++ [withMaxTermSize k]
-  RoughSpec.roughSpec $ makeConfig $ [addBackground qsProps] ++ s
+  RoughSpec.roughSpec (makeConfig $ [addBackground qsProps] ++ s) Nothing
   return ()
 
 -- | A signature containing some default templates for roughSpec
@@ -518,3 +521,11 @@ roughSpecDefault sig = roughSpec dtSig
 roughSpecQSDefault :: [Sig] -> IO ()
 roughSpecQSDefault sig = roughSpecWithQuickSpec 2 dtSig
   where dtSig = sig ++ [defaultTemplates]
+
+roughSpecExternalTemplates :: Signature sig => sig -> FilePath -> IO ()
+roughSpecExternalTemplates s tfile = do
+  contents <- readFile tfile
+  Control.Exception.evaluate (length contents)
+  let ts = parseTemplates contents
+  RoughSpec.roughSpec (makeConfig s) (Just ts)
+  return ()
