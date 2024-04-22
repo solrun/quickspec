@@ -67,7 +67,7 @@ roughSpec cfg@Config{..} ext_templates = do
     templates = case ext_templates of
       Nothing -> cfg_templates
       Just ts -> cfg_templates ++ ts
-      
+
     -- Present property to user and keep for future pruning.
     present funcs prop = do
       --putLine $ prettyShow prop

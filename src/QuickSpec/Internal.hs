@@ -524,8 +524,13 @@ roughSpecQSDefault sig = roughSpecWithQuickSpec 2 dtSig
 
 roughSpecExternalTemplates :: Signature sig => sig -> FilePath -> IO ()
 roughSpecExternalTemplates s tfile = do
+  roughSpecResultXT s tfile
+  return ()
+
+-- | Run RoughSpec, returning the list of discovered properties.
+roughSpecResultXT :: Signature sig => sig -> FilePath -> IO [Prop (Term Haskell.Constant)]
+roughSpecResultXT sig tfile = do
   contents <- readFile tfile
   Control.Exception.evaluate (length contents)
   let ts = parseTemplates contents
-  RoughSpec.roughSpec (makeConfig s) (Just ts)
-  return ()
+  RoughSpec.roughSpec (makeConfig sig) (Just ts)
