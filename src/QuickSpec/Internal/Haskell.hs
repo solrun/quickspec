@@ -50,7 +50,7 @@ import QuickSpec.Internal.Explore.Conditionals hiding (Normal)
 import Control.Spoon
 import qualified Data.Set as Set
 import qualified Test.QuickCheck.Poly as Poly
-import Numeric.Natural()
+import Numeric.Natural(Natural)
 import Test.QuickCheck.Instances()
 import Data.Word
 import Data.List.NonEmpty (NonEmpty)
